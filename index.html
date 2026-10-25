@@ -1,0 +1,2398 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#090819">
+  <title>Diopside</title>
+  <style>
+    :root {
+      --bg: #090819;
+      --panel: #0c0a20;
+      --panel-2: #100d2b;
+      --panel-3: #161130;
+      --line: #2d2844;
+      --line-soft: #17132e;
+      --text: #f2f3f7;
+      --muted: #7984d1;
+      --faint: #484f7d;
+      --accent: #1ea8fc;
+      --accent-2: #42c6ff;
+      --accent-soft: rgba(30, 168, 252, .14);
+      --danger: #ff2e97;
+      --warning: #ff9b50;
+      --pink: #ff2e97;
+      --purple: #d86bff;
+      --yellow: #ffd400;
+      --text-scale: 1;
+      --left-w: 284px;
+      --right-w: 380px;
+      --radius: 10px;
+      --surface-deep: #090819;
+      --surface-input: #0c0a20;
+      --surface-hover: #1d173d;
+      --surface-selected: #8a45a3;
+      --raised-border: #3b4167;
+      --font: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: calc(14px * var(--text-scale));
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+    ::selection { background: rgba(72, 79, 125, .9); }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: #2c3831; border: 3px solid transparent; background-clip: padding-box; border-radius: 20px; }
+    ::-webkit-scrollbar-corner { background: transparent; }
+
+    .app { height: 100%; display: flex; flex-direction: column; }
+    .topbar {
+      height: 54px;
+      flex: 0 0 54px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+      background: #090819;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+      z-index: 20;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+    .gem {
+      width: 28px; height: 28px; display: grid; place-items: center;
+      color: var(--accent-2); filter: drop-shadow(0 0 9px rgba(66,198,255,.48));
+    }
+    .brand-name { font-size: 16px; font-weight: 660; letter-spacing: .01em; }
+    .brand-name span { color: var(--pink); text-shadow: 0 0 12px rgba(255,46,151,.28); }
+    .workspace-label {
+      min-width: 0; flex: 1; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 13px;
+    }
+    .workspace-label strong { color: #cbd5ce; font-weight: 520; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .top-actions { display: flex; gap: 6px; min-width: 180px; justify-content: flex-end; }
+
+    .icon-btn, .soft-btn, .primary-btn {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background .14s ease, border-color .14s ease, color .14s ease, transform .14s ease;
+    }
+    .icon-btn { width: 34px; height: 34px; display: grid; place-items: center; color: var(--muted); }
+    .icon-btn:hover { background: var(--panel-3); color: var(--text); }
+    .icon-btn:active, .soft-btn:active, .primary-btn:active { transform: translateY(1px); }
+    .icon-btn svg, .soft-btn svg, .primary-btn svg { width: 17px; height: 17px; flex: 0 0 auto; }
+    .soft-btn, .primary-btn { min-height: 34px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: 12.5px; }
+    .soft-btn { border-color: var(--line); background: var(--panel-2); color: #bec9c1; }
+    .soft-btn:hover { border-color: #3a493f; background: #19221d; color: var(--text); }
+    .primary-btn { background: var(--accent); color: #ffffff; font-weight: 650; box-shadow: 0 0 16px rgba(30,168,252,.12); }
+    .primary-btn:hover { background: #42c6ff; box-shadow: 0 0 18px rgba(66,198,255,.26); }
+    .primary-btn:disabled, .soft-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .workspace {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: var(--left-w) 5px minmax(280px, 1fr) 5px var(--right-w);
+    }
+    .workspace.files-hidden { grid-template-columns: 0 0 minmax(280px, 1fr) 5px var(--right-w); }
+    .workspace.chat-hidden { grid-template-columns: var(--left-w) 5px minmax(280px, 1fr) 0 0; }
+    .workspace.files-hidden.chat-hidden { grid-template-columns: 0 0 minmax(280px, 1fr) 0 0; }
+    .workspace.files-hidden .left-pane, .workspace.files-hidden #leftGutter,
+    .workspace.chat-hidden .right-pane, .workspace.chat-hidden #rightGutter { display: none; }
+    .pane { min-width: 0; min-height: 0; background: var(--panel); display: flex; flex-direction: column; }
+    .left-pane { grid-column: 1; border-right: 1px solid var(--line-soft); }
+    #leftGutter { grid-column: 2; }
+    .center-pane { grid-column: 3; background: #0c0a20; }
+    #rightGutter { grid-column: 4; }
+    .right-pane { grid-column: 5; border-left: 1px solid var(--line-soft); position: relative; }
+    .gutter { position: relative; cursor: col-resize; background: #090819; z-index: 5; }
+    .gutter::after { content: ""; position: absolute; inset: 0 2px; background: transparent; transition: background .12s; }
+    .gutter:hover::after, .gutter.dragging::after { background: var(--accent); opacity: .55; }
+
+    .pane-head {
+      height: 45px;
+      flex: 0 0 45px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px 0 14px;
+      border-bottom: 1px solid var(--line-soft);
+      gap: 8px;
+    }
+    .pane-title { color: #c8d2cb; font-size: 11px; font-weight: 700; letter-spacing: .105em; text-transform: uppercase; flex: 1; }
+    .head-actions { display: flex; align-items: center; gap: 2px; }
+    .head-actions .icon-btn { width: 30px; height: 30px; }
+    .panel-toggle.active { color: var(--accent-2); background: var(--accent-soft); }
+    .tooltip { position: relative; }
+    .tooltip::after {
+      content: attr(data-tip); pointer-events: none; position: absolute; top: calc(100% + 7px); left: 50%; transform: translate(-50%, -3px);
+      padding: 5px 7px; color: #dce5df; background: #263129; border: 1px solid #39473e; border-radius: 5px;
+      white-space: nowrap; font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 0; visibility: hidden; transition: .14s;
+      z-index: 100;
+    }
+    .tooltip:hover::after { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+
+    .browser-toolbar { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); }
+    .search-wrap { height: 32px; position: relative; }
+    .search-wrap svg { position: absolute; width: 15px; height: 15px; left: 9px; top: 8px; color: var(--faint); }
+    .search-input {
+      width: 100%; height: 32px; border: 1px solid var(--line); border-radius: 7px; outline: none;
+      background: #0c110e; color: var(--text); padding: 0 28px 0 31px; font-size: 12px;
+    }
+    .search-input:focus { border-color: #496b58; box-shadow: 0 0 0 2px rgba(115,182,144,.08); }
+    .search-clear { position: absolute; right: 4px; top: 3px; width: 26px; height: 26px; }
+
+    .tree { flex: 1; min-height: 0; overflow: auto; padding: 7px 6px 18px; position: relative; transition: background .16s, box-shadow .16s; }
+    .favorites-section { margin: 0 0 7px; padding-bottom: 7px; border-bottom: 1px solid var(--line-soft); }
+    .tree-section-title { height: 26px; display: flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--muted); font-size: calc(10px * var(--text-scale)); font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+    .tree-section-title svg { width: 13px; height: 13px; color: var(--yellow); }
+    .favorite-row .tree-icon { color: var(--yellow); }
+    .favorite-row .tree-label::after { content: attr(data-kind); margin-left: 7px; color: var(--faint); font-size: calc(9px * var(--text-scale)); text-transform: uppercase; }
+    .tree.drop-target { background: rgba(30,168,252,.08); box-shadow: inset 0 0 0 2px #1ea8fc, inset 0 0 38px rgba(66,198,255,.08); }
+    .tree.drop-target::before { content: attr(data-drop-label); position: sticky; top: 8px; z-index: 20; display: block; width: calc(100% - 12px); margin: 2px 6px 10px; padding: 13px 10px; border: 1px dashed #42c6ff; border-radius: 7px; background: #100d2bf2; color: #f2f3f7; text-align: center; font-size: 11px; font-weight: 650; box-shadow: 0 8px 26px rgba(0,0,0,.32), 0 0 18px rgba(66,198,255,.12); }
+    .tree-row {
+      height: 29px; display: flex; align-items: center; gap: 4px; border-radius: 5px; padding-right: 4px;
+      color: #b8c2bb; cursor: default; user-select: none; white-space: nowrap;
+    }
+    .tree-row:hover { background: #301943; color: #ffffff; }
+    .tree-row.selected { background: #8a45a3; color: #ffffff; }
+    .tree-row.contexted { outline: 1px solid rgba(66,198,255,.7); box-shadow: inset 2px 0 0 var(--accent-2); }
+    .tree-row.drag-source { opacity: .42; }
+    .tree-row.move-target { background: rgba(30,168,252,.18); outline: 1px solid var(--accent-2); box-shadow: inset 3px 0 0 var(--accent-2); }
+    .tree.move-target { box-shadow: inset 0 0 0 2px var(--accent-2); }
+    .tree-toggle { width: 18px; height: 25px; display: grid; place-items: center; color: var(--faint); flex: 0 0 18px; }
+    .tree-toggle svg { width: 12px; height: 12px; transition: transform .12s; }
+    .tree-toggle.open svg { transform: rotate(90deg); }
+    .tree-icon { width: 18px; height: 18px; display: grid; place-items: center; color: #85978c; flex: 0 0 18px; }
+    .tree-icon.folder { color: var(--accent-2); }
+    .tree-icon svg { width: 16px; height: 16px; }
+    .tree-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: calc(12.5px * var(--text-scale)); }
+    .tree-add { opacity: 0; width: 24px; height: 24px; color: var(--muted); }
+    .tree-row:hover .tree-add, .tree-row.contexted .tree-add { opacity: 1; }
+    .tree-add:hover { color: #ffffff; background: rgba(30,168,252,.2); }
+    .tree-empty { padding: 32px 15px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .tree-empty .empty-icon { width: 40px; height: 40px; margin: 0 auto 10px; color: #526259; }
+    .tree-empty .empty-icon svg { width: 100%; height: 100%; }
+
+    .doc-tabs { min-height: 36px; flex: 0 0 36px; display: flex; align-items: stretch; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--line-soft); background: var(--surface-deep); scrollbar-width: thin; }
+    .doc-tabs:empty { display: none; }
+    .doc-tab { min-width: 110px; max-width: 230px; flex: 0 1 auto; display: flex; align-items: center; gap: 7px; padding: 0 6px 0 11px; border: 0; border-right: 1px solid var(--line-soft); border-top: 2px solid transparent; background: var(--panel-2); color: var(--muted); cursor: pointer; }
+    .doc-tab:hover { background: var(--surface-hover); color: var(--text); }
+    .doc-tab.active { border-top-color: var(--accent); background: var(--panel); color: var(--text); }
+    .doc-tab.preview .doc-tab-name { font-style: italic; }
+    .doc-tab-icon { width: 15px; height: 15px; display: grid; place-items: center; flex: 0 0 15px; color: var(--accent-2); }
+    .doc-tab-icon svg { width: 14px; height: 14px; }
+    .doc-tab-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(11.5px * var(--text-scale)); }
+    .doc-tab-close { width: 22px; height: 22px; flex: 0 0 22px; display: grid; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--faint); cursor: pointer; opacity: .45; }
+    .doc-tab:hover .doc-tab-close, .doc-tab.active .doc-tab-close { opacity: 1; }
+    .doc-tab-close:hover { background: var(--surface-hover); color: var(--text); }
+    .doc-tab-close svg { width: 13px; height: 13px; }
+    .doc-head { height: 45px; flex: 0 0 45px; padding: 0 12px 0 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line-soft); }
+    .doc-meta { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+    .doc-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: calc(13px * var(--text-scale)); font-weight: 580; color: #d9e2dc; }
+    .doc-path { color: var(--faint); font-size: 11px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .doc-actions { display: flex; gap: 4px; }
+    .doc-stage { flex: 1; min-height: 0; overflow: auto; position: relative; }
+    .welcome { min-height: 100%; display: grid; place-items: center; padding: 42px; }
+    .welcome-inner { width: min(620px, 100%); text-align: center; transform: translateY(-3%); }
+    .welcome-gem { width: 76px; height: 76px; margin: 0 auto 22px; color: var(--accent); opacity: .8; filter: drop-shadow(0 14px 32px rgba(86,154,116,.16)); }
+    .welcome-gem svg { width: 100%; height: 100%; }
+    .welcome h1 { margin: 0 0 10px; font-size: clamp(26px, 3vw, 36px); font-weight: 630; letter-spacing: -.035em; }
+    .welcome p { margin: 0 auto 25px; color: var(--muted); line-height: 1.65; max-width: 500px; font-size: 14px; }
+    .welcome-actions { display: flex; justify-content: center; gap: 9px; flex-wrap: wrap; }
+    .welcome-note { margin-top: 22px; color: var(--faint); font-size: 11px; }
+
+    .markdown-view { width: min(840px, calc(100% - 48px)); margin: 0 auto; padding: 44px 0 90px; color: #d7dfda; font-size: calc(15px * var(--text-scale)); line-height: 1.72; }
+    .markdown-view h1, .markdown-view h2, .markdown-view h3, .markdown-view h4 { color: #edf3ef; line-height: 1.25; letter-spacing: -.02em; margin: 1.6em 0 .6em; }
+    .markdown-view h1 { font-size: 2em; padding-bottom: .35em; border-bottom: 1px solid var(--line); margin-top: 0; }
+    .markdown-view h2 { font-size: 1.5em; }
+    .markdown-view h3 { font-size: 1.2em; }
+    .markdown-view p { margin: 0 0 1em; }
+    .markdown-view a { color: var(--accent-2); text-decoration: none; border-bottom: 1px solid rgba(159,208,179,.35); }
+    .markdown-view blockquote { margin: 1.2em 0; padding: .2em 0 .2em 1em; color: #aebbb2; border-left: 3px solid #547961; }
+    .markdown-view code { font-family: var(--mono); font-size: .87em; background: #17201a; color: #c9ded0; border: 1px solid #26342b; border-radius: 4px; padding: .13em .36em; }
+    .markdown-view pre { background: #0a0e0c; border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow: auto; }
+    .markdown-view pre code { background: none; border: 0; padding: 0; color: #c7d3cb; }
+    .markdown-view table { width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: 13px; }
+    .markdown-view th, .markdown-view td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+    .markdown-view th { background: #161e19; }
+    .markdown-view img { max-width: 100%; border-radius: 6px; }
+    .markdown-view hr { border: 0; border-top: 1px solid var(--line); margin: 2em 0; }
+    .markdown-editor { height: 100%; min-height: 0; display: flex; flex-direction: column; background: #0c0a20; overflow: hidden; }
+    .editor-ribbon { min-height: 44px; flex: 0 0 auto; position: sticky; top: 0; z-index: 35; display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-bottom: 1px solid var(--line); background: #090819; overflow-x: auto; box-shadow: 0 5px 16px rgba(0,0,0,.22); }
+    .ribbon-group { display: flex; align-items: center; gap: 2px; padding-right: 6px; margin-right: 1px; border-right: 1px solid #2d2844; }
+    .ribbon-group:last-child { border-right: 0; margin-left: auto; padding-right: 0; }
+    .editor-tool { min-width: 30px; height: 30px; padding: 0 8px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #aeb7ec; cursor: pointer; font-size: 12px; display: inline-grid; place-items: center; }
+    .editor-tool:hover { color: #ffffff; background: #1d173d; border-color: #3b4167; }
+    .editor-tool.primary { color: #ffffff; background: #1ea8fc; border-color: #42c6ff; }
+    .editor-tool.primary:hover { box-shadow: 0 0 13px rgba(66,198,255,.32); }
+    .editor-tool.danger:hover { color: #ff72b8; border-color: #763b8c; }
+    .editor-surface { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(260px, 1fr); }
+    .editor-surface.split { grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr); }
+    .editor-surface.preview-only { grid-template-columns: 1fr; }
+    .editor-surface.preview-only .markdown-input { display: none; }
+    .editor-surface.preview-only .editor-preview { display: block; border-left: 0; }
+    .markdown-input { width: 100%; height: 100%; min-height: 0; resize: none; border: 0; outline: 0; padding: 30px 34px 80px; background: #0c0a20; color: #e4eeff; caret-color: #ff2e97; font: calc(13px * var(--text-scale))/1.65 var(--mono); tab-size: 2; }
+    .editor-preview { min-height: 0; overflow: auto; border-left: 1px solid var(--line); background: #0c0a20; }
+    .editor-preview .markdown-view { width: min(760px, calc(100% - 40px)); padding-top: 30px; }
+    .editor-state { color: var(--muted); font-size: 10.5px; white-space: nowrap; padding: 0 5px; }
+    .text-view { margin: 0; min-height: 100%; padding: 28px 32px 80px; color: #cbd5ce; background: #0b100d; font: 13px/1.65 var(--mono); white-space: pre-wrap; tab-size: 2; }
+    .media-view { width: 100%; min-height: 100%; display: grid; place-items: center; padding: 24px; }
+    .media-view img { max-width: 100%; max-height: calc(100vh - 150px); object-fit: contain; border-radius: 5px; box-shadow: 0 20px 60px rgba(0,0,0,.28); }
+    .media-view audio { width: min(560px, 90%); }
+    .media-view video { max-width: 100%; max-height: calc(100vh - 150px); }
+    .frame-view { width: 100%; height: 100%; border: 0; background: #fff; }
+    .unsupported { min-height: 100%; display: grid; place-items: center; padding: 30px; }
+    .unsupported-card { text-align: center; width: min(420px, 100%); }
+    .file-badge { width: 72px; height: 88px; margin: 0 auto 20px; position: relative; display: grid; place-items: center; background: #18211c; border: 1px solid #334139; border-radius: 8px; color: var(--accent-2); font-weight: 750; letter-spacing: .04em; }
+    .file-badge::after { content: ""; position: absolute; right: -1px; top: -1px; border-left: 18px solid transparent; border-bottom: 18px solid #334139; }
+    .unsupported h2 { font-size: 18px; margin: 0 0 7px; }
+    .unsupported p { color: var(--muted); margin: 0 0 20px; line-height: 1.55; }
+
+    .chat-model { display: flex; align-items: center; min-width: 0; flex: 1; }
+    .model-select { width: 100%; border: 0; outline: 0; background: transparent; color: #d5ded8; font-weight: 580; font-size: 12.5px; padding: 6px 22px 6px 0; text-overflow: ellipsis; cursor: pointer; }
+    .model-select option { background: #17201a; }
+    .messages { flex: 1; min-height: 0; overflow: auto; padding: 19px 15px 10px; scroll-behavior: smooth; }
+    .chat-empty { min-height: 100%; display: grid; align-content: center; justify-items: center; text-align: center; padding: 24px; color: var(--muted); }
+    .chat-empty .spark { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #34433a; background: #18211c; color: var(--accent-2); border-radius: 50%; margin-bottom: 13px; }
+    .chat-empty .spark svg { width: 18px; height: 18px; }
+    .chat-empty strong { color: #d4ddd7; margin-bottom: 5px; }
+    .chat-empty span { max-width: 250px; font-size: 12px; line-height: 1.55; }
+    .message { display: flex; gap: 9px; margin: 0 0 17px; animation: enter .2s ease; }
+    @keyframes enter { from { opacity: 0; transform: translateY(4px); } }
+    .message.user { flex-direction: row-reverse; }
+    .avatar { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border-radius: 50%; background: #202a24; border: 1px solid #334139; color: #aebbb2; font-size: 10px; font-weight: 700; }
+    .assistant .avatar { color: var(--accent-2); }
+    .bubble { max-width: calc(100% - 38px); color: #ccd6cf; font-size: calc(13px * var(--text-scale)); line-height: 1.55; }
+    .user .bubble { background: #1b2821; border: 1px solid #2e4135; padding: 9px 11px; border-radius: 11px 3px 11px 11px; color: #e2e9e4; white-space: pre-wrap; }
+    .assistant .bubble { padding-top: 3px; }
+    .bubble p { margin: 0 0 .75em; }
+    .bubble p:last-child { margin-bottom: 0; }
+    .bubble pre { overflow: auto; background: #0a0e0c; border: 1px solid var(--line); padding: 10px; border-radius: 6px; font: 11px/1.5 var(--mono); }
+    .bubble code { font-family: var(--mono); font-size: .9em; color: #b9d5c3; }
+    .bubble ul, .bubble ol { padding-left: 20px; }
+    .chat-markdown { min-width: 0; }
+    .chat-markdown h1, .chat-markdown h2, .chat-markdown h3, .chat-markdown h4 { margin: 1.05em 0 .45em; color: #f2f3f7; line-height: 1.28; }
+    .chat-markdown h1:first-child, .chat-markdown h2:first-child, .chat-markdown h3:first-child { margin-top: 0; }
+    .chat-markdown h1 { font-size: 17px; }.chat-markdown h2 { font-size: 15px; }.chat-markdown h3, .chat-markdown h4 { font-size: 13.5px; }
+    .chat-markdown a { color: #42c6ff; text-decoration: none; border-bottom: 1px solid rgba(66,198,255,.38); }
+    .chat-markdown blockquote { margin: .8em 0; padding: .1em 0 .1em 10px; color: #aeb7ec; border-left: 2px solid #d86bff; }
+    .chat-markdown table { width: 100%; border-collapse: collapse; margin: .85em 0; font-size: 11px; }
+    .chat-markdown th, .chat-markdown td { border: 1px solid #2d2844; padding: 6px 7px; text-align: left; vertical-align: top; }
+    .chat-markdown th { background: #161130; color: #42c6ff; }
+    .chat-markdown tbody tr:nth-child(even) { background: rgba(121,132,209,.06); }
+    .chat-markdown hr { border: 0; border-top: 1px solid #2d2844; margin: 1em 0; }
+    .typing { display: inline-flex; gap: 4px; padding-top: 6px; }
+    .typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: blink 1s infinite ease-in-out; }
+    .typing i:nth-child(2) { animation-delay: .15s; }.typing i:nth-child(3) { animation-delay: .3s; }
+    @keyframes blink { 0%, 70%, 100% { opacity: .25; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-2px); } }
+
+    .composer { flex: 0 0 auto; padding: 8px 11px 12px; border-top: 1px solid var(--line-soft); background: #0f1511; }
+    .context-strip { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 8px; }
+    .context-strip:empty { display: none; }
+    .context-chip { max-width: 190px; flex: 0 0 auto; height: 28px; display: flex; align-items: center; gap: 5px; padding: 0 5px 0 8px; border: 1px solid #34463b; background: rgba(115,182,144,.09); border-radius: 6px; color: #bcd2c3; font-size: 11px; }
+    .context-chip svg { width: 13px; height: 13px; flex: 0 0 auto; }
+    .context-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chip-remove { border: 0; background: transparent; color: #819087; width: 20px; height: 20px; padding: 0; display: grid; place-items: center; border-radius: 4px; cursor: pointer; }
+    .chip-remove:hover { color: #d8e2db; background: rgba(255,255,255,.06); }
+    .compose-box { border: 1px solid #304037; background: #141c17; border-radius: 10px; overflow: hidden; transition: border-color .14s, box-shadow .14s; }
+    .compose-box:focus-within { border-color: #527663; box-shadow: 0 0 0 2px rgba(115,182,144,.07); }
+    .prompt { width: 100%; min-height: 54px; max-height: 180px; resize: none; border: 0; outline: 0; background: transparent; color: var(--text); padding: 11px 12px 6px; line-height: 1.45; font-size: calc(13px * var(--text-scale)); }
+    .history-popover { position: absolute; z-index: 60; top: 42px; right: 8px; width: min(340px, calc(100vw - 24px)); max-height: min(480px, calc(100vh - 120px)); display: none; flex-direction: column; overflow: hidden; background: #100d2b; border: 1px solid #3b4167; border-radius: 10px; box-shadow: 0 18px 58px rgba(0,0,0,.54), 0 0 20px rgba(216,107,255,.1); }
+    .history-popover.open { display: flex; }
+    .history-head { min-height: 45px; display: flex; align-items: center; padding: 0 10px 0 13px; border-bottom: 1px solid var(--line); }
+    .history-head strong { flex: 1; font-size: calc(12px * var(--text-scale)); }
+    .history-list { min-height: 80px; overflow: auto; padding: 5px; }
+    .history-empty { padding: 30px 16px; text-align: center; color: var(--muted); font-size: calc(11px * var(--text-scale)); }
+    .history-item { display: flex; align-items: center; gap: 5px; min-height: 51px; padding: 4px 5px 4px 9px; border-radius: 6px; cursor: pointer; }
+    .history-item:hover { background: #1d173d; }
+    .history-item.current { background: rgba(30,168,252,.1); box-shadow: inset 2px 0 0 var(--accent-2); }
+    .history-copy { flex: 1; min-width: 0; }
+    .history-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #eef0fa; font-size: calc(11.5px * var(--text-scale)); font-weight: 600; }
+    .history-copy span { display: block; margin-top: 3px; color: var(--faint); font-size: calc(9.5px * var(--text-scale)); }
+    .history-delete { width: 29px; height: 29px; opacity: .55; }
+    .history-item:hover .history-delete { opacity: 1; }
+    .history-delete:hover { color: var(--danger); background: rgba(255,46,151,.1); }
+    .prompt::placeholder { color: #68776e; }
+    .compose-actions { height: 37px; display: flex; align-items: center; padding: 0 7px 6px; gap: 3px; }
+    .compose-actions .icon-btn { width: 29px; height: 29px; }
+    .compose-hint { color: var(--faint); font-size: 10px; margin-left: 3px; flex: 1; }
+    .send-btn { width: 30px; height: 30px; border: 0; border-radius: 7px; background: var(--accent); color: #0a110d; cursor: pointer; display: grid; place-items: center; }
+    .send-btn:hover { background: #88c49f; }
+    .send-btn:disabled { background: #34423a; color: #6c7a71; cursor: not-allowed; }
+    .send-btn svg { width: 16px; height: 16px; }
+    .privacy-note { text-align: center; color: #536159; font-size: 9.5px; margin-top: 7px; }
+
+    .statusbar { height: 23px; flex: 0 0 23px; padding: 0 9px 0 12px; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); background: #0b100d; color: #66746b; font-size: 10px; }
+    .status-left { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status-item { display: flex; align-items: center; gap: 5px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #526159; }
+    .status-dot.online { background: var(--accent); box-shadow: 0 0 7px rgba(115,182,144,.55); }
+    .status-dot.error { background: var(--danger); }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(3,6,4,.7); backdrop-filter: blur(4px); }
+    .modal-backdrop.open { display: flex; }
+    .modal { width: min(600px, 100%); max-height: min(780px, calc(100vh - 40px)); display: flex; flex-direction: column; background: #121914; border: 1px solid #344139; border-radius: 13px; box-shadow: 0 24px 80px rgba(0,0,0,.48); animation: modalIn .17s ease; }
+    @keyframes modalIn { from { transform: translateY(7px) scale(.99); opacity: .4; } }
+    .modal-head { height: 54px; flex: 0 0 54px; display: flex; align-items: center; padding: 0 12px 0 19px; border-bottom: 1px solid var(--line); }
+    .modal-head h2 { margin: 0; font-size: 15px; font-weight: 650; flex: 1; }
+    .modal-body { overflow: auto; padding: 20px; }
+    .settings-section { padding-bottom: 23px; margin-bottom: 22px; border-bottom: 1px solid var(--line-soft); }
+    .settings-section:last-of-type { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+    .settings-copyright { padding: 5px 0 1px; color: var(--faint); font-size: calc(10.5px * var(--text-scale)); text-align: center; letter-spacing: .02em; }
+    .section-title { margin: 0 0 4px; color: #e0e8e2; font-size: 13px; font-weight: 650; }
+    .section-copy { margin: 0 0 15px; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+    .field { margin-bottom: 13px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; margin: 0 0 6px; color: #aebbb2; font-size: 11px; font-weight: 600; }
+    .input, .textarea, .select { width: 100%; border: 1px solid #2e3b33; border-radius: 7px; background: #0c110e; color: #dce5df; outline: none; padding: 9px 10px; font-size: 12px; }
+    .input:focus, .textarea:focus, .select:focus { border-color: #537461; box-shadow: 0 0 0 2px rgba(115,182,144,.07); }
+    .textarea { resize: vertical; min-height: 78px; line-height: 1.5; }
+    .input-row { display: flex; gap: 8px; }
+    .input-row .input-wrap { flex: 1; position: relative; }
+    .input-wrap .input { padding-right: 38px; }
+    .input-wrap .icon-btn { position: absolute; right: 2px; top: 2px; width: 34px; height: 34px; }
+    .provider-status { min-height: 18px; margin-top: 8px; font-size: 11px; color: var(--muted); }
+    .provider-status.success { color: var(--accent-2); }
+    .provider-status.error { color: var(--danger); }
+    .models-list { max-height: 180px; overflow: auto; background: #0c110e; border: 1px solid var(--line); border-radius: 7px; padding: 5px; }
+    .model-check { min-height: 31px; display: flex; align-items: center; gap: 9px; border-radius: 5px; padding: 4px 8px; color: #bcc7bf; font: 11.5px var(--mono); cursor: pointer; }
+    .model-check:hover { background: #17201a; }
+    .model-check input { accent-color: var(--accent); }
+    .models-empty { padding: 17px; text-align: center; color: var(--faint); font-size: 11px; }
+    .range-row { display: flex; align-items: center; gap: 11px; }
+    .range-row input { flex: 1; accent-color: var(--accent); }
+    .range-value { width: 35px; text-align: right; color: var(--accent-2); font: 12px var(--mono); }
+    .checkbox-row { display: flex !important; align-items: center; gap: 9px; min-height: 28px; margin: 0 !important; cursor: pointer; }
+    .checkbox-row input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
+    .field-help { margin: 3px 0 0 24px; color: var(--faint); font-size: 10.5px; line-height: 1.4; }
+    .folder-card { min-height: 52px; display: flex; align-items: center; gap: 11px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: #0c110e; }
+    .folder-card > svg { width: 22px; height: 22px; color: #9eb9a7; flex: 0 0 auto; }
+    .folder-info { flex: 1; min-width: 0; }
+    .folder-info strong { display: block; font-size: 12px; font-weight: 580; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .folder-info span { color: var(--faint); font-size: 10px; }
+    .modal-foot { min-height: 59px; flex: 0 0 59px; padding: 11px 18px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+
+    .toast-stack { position: fixed; right: 14px; top: 68px; z-index: 200; display: flex; flex-direction: column; gap: 7px; pointer-events: none; }
+    .toast { width: min(340px, calc(100vw - 28px)); padding: 10px 12px; border: 1px solid #3b4167; border-left: 3px solid var(--accent-2); background: #100d2b; border-radius: 8px; box-shadow: 0 10px 36px rgba(0,0,0,.48), 0 0 16px rgba(66,198,255,.1); color: #f2f3f7; font-size: 11.5px; line-height: 1.4; animation: toastIn .2s ease; }
+    .toast.error { border-color: rgba(255,46,151,.62); border-left-color: var(--danger); }
+    @keyframes toastIn { from { transform: translateX(9px); opacity: 0; } }
+    .context-menu { position: fixed; z-index: 180; display: none; min-width: 210px; padding: 5px; background: #100d2b; border: 1px solid #3b4167; border-radius: 8px; box-shadow: 0 14px 44px rgba(0,0,0,.5), 0 0 18px rgba(216,107,255,.1); }
+    .context-menu.open { display: block; }
+    .context-menu button { width: 100%; min-height: 34px; border: 0; border-radius: 5px; background: transparent; color: #e4e7fa; display: flex; align-items: center; gap: 9px; padding: 0 10px; cursor: pointer; text-align: left; font-size: 12px; }
+    .context-menu button:hover { background: #8a45a3; color: #ffffff; }
+    .context-menu svg { width: 16px; height: 16px; color: var(--accent-2); }
+    .context-menu button[hidden] { display: none; }
+
+    /* Neon City workbench surfaces and focus states. */
+    .soft-btn { color: #d9e0e9; }
+    .soft-btn:hover { border-color: #763b8c; background: #1d173d; }
+    .search-input, .input, .textarea, .select { background: #0c0a20; border-color: #763b8c; color: #f2f3f7; }
+    .search-input:focus, .input:focus, .textarea:focus, .select:focus { border-color: #1ea8fc; box-shadow: 0 0 0 2px rgba(30,168,252,.13); }
+    .tooltip::after { color: #f2f3f7; background: #100d2b; border-color: #3b4167; }
+    .markdown-view { color: #d9e0e9; }
+    .markdown-view h1, .markdown-view h2, .markdown-view h3, .markdown-view h4 { color: #f2f3f7; }
+    .markdown-view code, .bubble code { background: #161130; color: #42c6ff; border-color: #2d2844; }
+    .markdown-view pre, .bubble pre, .text-view { background: #090819; }
+    .markdown-view th { background: #161130; color: #42c6ff; }
+    .markdown-view tbody tr:nth-child(even) { background: rgba(121,132,209,.06); }
+    .markdown-view tbody tr:hover { background: rgba(216,107,255,.09); }
+    .model-select option, .models-list, .folder-card { background: #100d2b; }
+    .composer { background: #090819; }
+    .compose-box { background: #0c0a20; border-color: #3b4167; }
+    .compose-box:focus-within { border-color: #1ea8fc; box-shadow: 0 0 0 2px rgba(30,168,252,.12); }
+    .context-chip { border-color: #3b4167; background: rgba(30,168,252,.1); color: #dce4ff; }
+    .statusbar { background: #090819; color: #7984d1; }
+    .modal { background: #100d2b; border-color: #3b4167; }
+
+    /* Theme palettes. Neon City remains the default. */
+    :root[data-theme="night-owl"] { --bg:#011627; --panel:#071d2d; --panel-2:#0b253a; --panel-3:#12334b; --line:#21445b; --line-soft:#102f43; --text:#d6deeb; --muted:#7f9fba; --faint:#58758d; --accent:#82aaff; --accent-2:#7fdbca; --accent-soft:rgba(130,170,255,.15); --pink:#c792ea; --purple:#c792ea; --yellow:#ecc48d; --danger:#ef5350; --surface-deep:#011627; --surface-input:#071d2d; --surface-hover:#12334b; --surface-selected:#2f6683; --raised-border:#28516a; }
+    :root[data-theme="tokyo-night"] { --bg:#16161e; --panel:#1a1b26; --panel-2:#202334; --panel-3:#292e42; --line:#3b4261; --line-soft:#24283b; --text:#c0caf5; --muted:#7aa2f7; --faint:#565f89; --accent:#7aa2f7; --accent-2:#7dcfff; --accent-soft:rgba(122,162,247,.15); --pink:#f7768e; --purple:#bb9af7; --yellow:#e0af68; --danger:#f7768e; --surface-deep:#16161e; --surface-input:#1a1b26; --surface-hover:#292e42; --surface-selected:#3d59a1; --raised-border:#3b4261; }
+    :root[data-theme="abyss"] { --bg:#000c18; --panel:#001525; --panel-2:#001e32; --panel-3:#062b40; --line:#12445d; --line-soft:#06263a; --text:#d5f4ff; --muted:#6ea8c2; --faint:#3e7088; --accent:#00c8ff; --accent-2:#00ffd0; --accent-soft:rgba(0,200,255,.14); --pink:#ff5ad9; --purple:#a77bff; --yellow:#ffe66d; --danger:#ff5370; --surface-deep:#000c18; --surface-input:#001525; --surface-hover:#062b40; --surface-selected:#075985; --raised-border:#15506b; }
+    :root[data-theme="neon-glow"] { --bg:#05010f; --panel:#0b0319; --panel-2:#120625; --panel-3:#21103b; --line:#482363; --line-soft:#231033; --text:#fbf7ff; --muted:#b68bd4; --faint:#76578c; --accent:#00f5ff; --accent-2:#77ffff; --accent-soft:rgba(0,245,255,.14); --pink:#ff00d9; --purple:#bc4dff; --yellow:#eaff00; --danger:#ff2a7f; --surface-deep:#05010f; --surface-input:#0b0319; --surface-hover:#21103b; --surface-selected:#7d1fa2; --raised-border:#5b2a78; }
+    :root[data-theme="visual-studio-light"] { --bg:#f3f3f3; --panel:#ffffff; --panel-2:#f7f7f7; --panel-3:#e8f3fb; --line:#d6d6d6; --line-soft:#e8e8e8; --text:#000000; --muted:#000000; --faint:#000000; --accent:#007acc; --accent-2:#0067ad; --accent-soft:rgba(0,122,204,.1); --pink:#c72e76; --purple:#7b3fc6; --yellow:#9a6700; --danger:#c42b1c; --surface-deep:#f3f3f3; --surface-input:#ffffff; --surface-hover:#e8f3fb; --surface-selected:#cce8ff; --raised-border:#c8c8c8; color-scheme:light; }
+    :root[data-theme="github-light"] { --bg:#f6f8fa; --panel:#ffffff; --panel-2:#f6f8fa; --panel-3:#ddf4ff; --line:#d0d7de; --line-soft:#eaeef2; --text:#000000; --muted:#000000; --faint:#000000; --accent:#0969da; --accent-2:#0550ae; --accent-soft:rgba(9,105,218,.1); --pink:#bf3989; --purple:#8250df; --yellow:#9a6700; --danger:#cf222e; --surface-deep:#f6f8fa; --surface-input:#ffffff; --surface-hover:#f3f4f6; --surface-selected:#ddf4ff; --raised-border:#d0d7de; color-scheme:light; }
+    :root[data-theme="solarized-light"] { --bg:#fdf6e3; --panel:#fffaf0; --panel-2:#eee8d5; --panel-3:#e7e0c9; --line:#d5cbb3; --line-soft:#e6ddc7; --text:#000000; --muted:#000000; --faint:#000000; --accent:#268bd2; --accent-2:#007e9c; --accent-soft:rgba(38,139,210,.11); --pink:#d33682; --purple:#6c71c4; --yellow:#b58900; --danger:#dc322f; --surface-deep:#fdf6e3; --surface-input:#fffaf0; --surface-hover:#eee8d5; --surface-selected:#d9e7e7; --raised-border:#c9bea5; color-scheme:light; }
+
+    :root[data-theme] body, :root[data-theme] .topbar, :root[data-theme] .gutter, :root[data-theme] .statusbar, :root[data-theme] .composer { background: var(--bg); }
+    :root[data-theme] .pane, :root[data-theme] .center-pane, :root[data-theme] .markdown-editor, :root[data-theme] .editor-preview, :root[data-theme] .markdown-input { background: var(--panel); color: var(--text); }
+    :root[data-theme] .editor-ribbon { background: var(--surface-deep); }
+    :root[data-theme] .compose-box, :root[data-theme] .search-input, :root[data-theme] .input, :root[data-theme] .textarea, :root[data-theme] .select { background: var(--surface-input); border-color: var(--raised-border); color: var(--text); }
+    :root[data-theme] .modal, :root[data-theme] .context-menu, :root[data-theme] .history-popover, :root[data-theme] .toast, :root[data-theme] .models-list, :root[data-theme] .folder-card, :root[data-theme] .tooltip::after { background: var(--panel-2); border-color: var(--raised-border); color: var(--text); }
+    :root[data-theme] .tree-row:hover, :root[data-theme] .history-item:hover, :root[data-theme] .editor-tool:hover, :root[data-theme] .context-menu button:hover { background: var(--surface-hover); color: var(--text); }
+    :root[data-theme] .tree-row.selected { background: var(--surface-selected); color: var(--text); }
+    :root[data-theme] .tree-row.move-target { background: var(--accent-soft); outline-color: var(--accent-2); }
+    :root[data-theme] .markdown-view pre, :root[data-theme] .bubble pre, :root[data-theme] .text-view { background: var(--surface-deep); color: var(--text); }
+    :root[data-theme] .markdown-view code, :root[data-theme] .bubble code, :root[data-theme] .markdown-view th, :root[data-theme] .chat-markdown th { background: var(--panel-3); color: var(--accent-2); border-color: var(--line); }
+    :root[data-theme-mode="light"] .brand-name, :root[data-theme-mode="light"] .workspace-label strong, :root[data-theme-mode="light"] .doc-name, :root[data-theme-mode="light"] .markdown-view, :root[data-theme-mode="light"] .markdown-view h1, :root[data-theme-mode="light"] .markdown-view h2, :root[data-theme-mode="light"] .markdown-view h3, :root[data-theme-mode="light"] .markdown-view h4, :root[data-theme-mode="light"] .chat-markdown h1, :root[data-theme-mode="light"] .chat-markdown h2, :root[data-theme-mode="light"] .chat-markdown h3, :root[data-theme-mode="light"] .chat-markdown h4, :root[data-theme-mode="light"] .section-title, :root[data-theme-mode="light"] .history-copy strong { color: var(--text); }
+    :root[data-theme-mode="light"] .soft-btn, :root[data-theme-mode="light"] .model-check, :root[data-theme-mode="light"] .context-menu button { color: var(--text); }
+    :root[data-theme-mode="light"] .pane-title, :root[data-theme-mode="light"] .tree-row, :root[data-theme-mode="light"] .tree-empty, :root[data-theme-mode="light"] .doc-path, :root[data-theme-mode="light"] .section-copy, :root[data-theme-mode="light"] .field label, :root[data-theme-mode="light"] .provider-status, :root[data-theme-mode="light"] .settings-folder-info, :root[data-theme-mode="light"] .compose-hint, :root[data-theme-mode="light"] .privacy-note, :root[data-theme-mode="light"] .statusbar, :root[data-theme-mode="light"] .context-chip, :root[data-theme-mode="light"] .history-copy, :root[data-theme-mode="light"] .history-time, :root[data-theme-mode="light"] .bubble, :root[data-theme-mode="light"] .markdown-view, :root[data-theme-mode="light"] .text-view, :root[data-theme-mode="light"] .editor-tool, :root[data-theme-mode="light"] .editor-state { color: #000000; }
+    :root[data-theme-mode="light"] .message .bubble { background: #eef8ff; border: 1px solid #c9e8fb; color: #000000; }
+    :root[data-theme-mode="light"] .message.assistant .bubble { padding: 9px 11px; border-radius: 3px 11px 11px 11px; }
+    :root[data-theme-mode="light"] .message .avatar, :root[data-theme-mode="light"] .message.assistant .avatar { background: #eef8ff; border-color: #c9e8fb; color: #000000; }
+    :root[data-theme-mode="light"] .model-select, :root[data-theme-mode="light"] .model-select option { color: #000000; background: var(--panel); }
+    :root[data-theme-mode="light"] .file-badge, :root[data-theme-mode="light"] .chat-empty .spark { background: #ffffff; border-color: #c9e8fb; color: #000000; }
+    :root[data-theme-mode="light"] .file-badge::after { border-bottom-color: #c9e8fb; }
+    :root[data-theme-mode="light"] .model-check:hover, :root[data-theme-mode="light"] .soft-btn:hover, :root[data-theme-mode="light"] .tree-row:hover, :root[data-theme-mode="light"] .tree-add:hover, :root[data-theme-mode="light"] .history-item:hover, :root[data-theme-mode="light"] .editor-tool:hover, :root[data-theme-mode="light"] .context-menu button:hover, :root[data-theme-mode="light"] .doc-tab:hover, :root[data-theme-mode="light"] .doc-tab-close:hover { background: #e8f5ff; color: #000000; border-color: #b9def5; }
+    :root[data-theme-mode="light"] .input, :root[data-theme-mode="light"] .textarea, :root[data-theme-mode="light"] .select, :root[data-theme-mode="light"] .search-input, :root[data-theme-mode="light"] .compose-box, :root[data-theme-mode="light"] .models-list, :root[data-theme-mode="light"] .folder-card { background: #ffffff; color: #000000; }
+    :root[data-theme-mode="light"] .doc-tab { background: #f5f9fc; color: #000000; }
+    :root[data-theme-mode="light"] .doc-tab.active { background: #ffffff; }
+    :root[data-theme-mode="light"] .chat-empty strong, :root[data-theme-mode="light"] .markdown-view blockquote, :root[data-theme-mode="light"] .chat-markdown blockquote { color: #000000; }
+    :root[data-theme-mode="light"] .send-btn:disabled { background: #dceef8; color: #526875; }
+    :root[data-theme-mode="light"] .tree.drop-target::before { background: #ffffff; color: #000000; box-shadow: 0 8px 26px rgba(20,45,60,.14); }
+    :root[data-theme-mode="light"] .ribbon-group { border-color: var(--line); }
+    :root[data-theme-mode="light"] ::-webkit-scrollbar-thumb { background: #a8b0b8; border: 3px solid transparent; background-clip: padding-box; }
+    .mobile-tabs { display: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 980px) {
+      .workspace { grid-template-columns: 250px 4px minmax(280px, 1fr) 4px 330px; }
+      .workspace.files-hidden { grid-template-columns: 0 0 minmax(280px, 1fr) 4px 330px; }
+      .workspace.chat-hidden { grid-template-columns: 250px 4px minmax(280px, 1fr) 0 0; }
+      .workspace.files-hidden.chat-hidden { grid-template-columns: 0 0 minmax(280px, 1fr) 0 0; }
+      .brand, .top-actions { min-width: auto; }
+      .workspace-label { display: none; }
+      .top-actions { margin-left: auto; }
+    }
+    @media (max-width: 1024px) {
+      .workspace { --compact-side-w: min(320px, 38vw); display: grid; position: relative; grid-template-columns: var(--compact-side-w) minmax(0, 1fr) var(--compact-side-w); }
+      .workspace.files-hidden { grid-template-columns: 0 minmax(0, 1fr) var(--compact-side-w); }
+      .workspace.chat-hidden { grid-template-columns: var(--compact-side-w) minmax(0, 1fr) 0; }
+      .workspace.files-hidden.chat-hidden { grid-template-columns: 0 minmax(0, 1fr) 0; }
+      .center-pane, .left-pane, .right-pane { position: static; width: auto; inset: auto; z-index: auto; box-shadow: none; }
+      .left-pane { grid-column: 1; }
+      .center-pane { display: flex; grid-column: 2; }
+      .right-pane { grid-column: 3; }
+      .workspace.files-hidden .left-pane, .workspace.chat-hidden .right-pane { display: none; }
+      .gutter { display: none; }
+    }
+    @media (max-width: 760px) {
+      body { overflow: hidden; }
+      .topbar { padding-bottom: 0; }
+      .workspace { --compact-side-w: min(220px, 46vw); }
+      .mobile-tabs { display: flex; height: 44px; flex: 0 0 44px; border-top: 1px solid var(--line); background: #0d120f; }
+      .mobile-tab { flex: 1; border: 0; background: transparent; color: var(--muted); font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+      .mobile-tab.active { color: var(--accent-2); background: var(--accent-soft); }
+      .mobile-tab svg { width: 16px; height: 16px; }
+      .statusbar { display: none; }
+      .markdown-view { width: calc(100% - 30px); padding-top: 27px; }
+      .editor-surface.split { grid-template-columns: 1fr; }
+      .editor-preview { display: none; }
+      .editor-surface.preview-only .editor-preview { display: block; }
+      .topbar { height: 50px; flex-basis: 50px; }
+      .welcome { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="gem" data-icon="gem"></div>
+        <div class="brand-name">diop<span>side</span></div>
+      </div>
+      <div class="workspace-label"><strong id="workspaceName">No folder selected</strong></div>
+      <div class="top-actions">
+        <button class="icon-btn tooltip panel-toggle" id="toggleBrowserPanel" data-tip="Show or hide file browser" aria-label="Show or hide file browser" aria-pressed="true" data-icon="files"></button>
+        <button class="icon-btn tooltip panel-toggle" id="toggleChatPanel" data-tip="Show or hide chat" aria-label="Show or hide chat" aria-pressed="true" data-icon="message"></button>
+        <button class="icon-btn tooltip" id="openFolderTop" data-tip="Open folder" aria-label="Open folder" data-icon="folder-open"></button>
+        <button class="icon-btn tooltip" id="settingsBtn" data-tip="Settings" aria-label="Settings" data-icon="settings"></button>
+      </div>
+    </header>
+
+    <main class="workspace" id="workspace">
+      <aside class="pane left-pane mobile-active" data-mobile-pane="files">
+        <div class="pane-head">
+          <div class="pane-title">Files</div>
+          <div class="head-actions">
+            <button class="icon-btn tooltip" id="hideBrowserPanel" data-tip="Hide file browser" aria-label="Hide file browser" data-icon="arrow-left"></button>
+            <button class="icon-btn tooltip" id="refreshTree" data-tip="Refresh" aria-label="Refresh folder" data-icon="refresh"></button>
+            <button class="icon-btn tooltip" id="attachTreeSelected" data-tip="Add selected item to chat" aria-label="Add selected item to chat" data-icon="paperclip" disabled></button>
+            <button class="icon-btn tooltip" id="openFolder" data-tip="Open folder" aria-label="Open folder" data-icon="folder-plus"></button>
+          </div>
+        </div>
+        <div class="browser-toolbar">
+          <div class="search-wrap">
+            <span data-icon="search"></span>
+            <input class="search-input" id="fileSearch" type="search" placeholder="Filter files" autocomplete="off">
+            <button class="icon-btn search-clear" id="clearSearch" aria-label="Clear filter" data-icon="x"></button>
+          </div>
+        </div>
+        <div class="tree" id="fileTree" role="tree"></div>
+      </aside>
+
+      <div class="gutter" id="leftGutter" aria-hidden="true"></div>
+
+      <section class="pane center-pane" data-mobile-pane="document">
+        <div class="doc-tabs" id="docTabs" role="tablist" aria-label="Open documents"></div>
+        <div class="doc-head">
+          <div class="doc-meta">
+            <span class="tree-icon" id="docIcon" data-icon="file"></span>
+            <span class="doc-name" id="docName">Welcome</span>
+            <span class="doc-path" id="docPath"></span>
+          </div>
+          <div class="doc-actions">
+            <button class="icon-btn tooltip" id="editMarkdown" data-tip="Edit Markdown" aria-label="Edit Markdown" data-icon="edit" disabled></button>
+            <button class="icon-btn tooltip" id="attachSelected" data-tip="Add to chat" aria-label="Add selected item to chat" data-icon="paperclip" disabled></button>
+            <button class="icon-btn tooltip" id="showInFinder" data-tip="Show in Finder" aria-label="Show in Finder" data-icon="folder-open" disabled></button>
+            <button class="icon-btn tooltip" id="openExternal" data-tip="Open externally" aria-label="Open externally" data-icon="external" disabled></button>
+          </div>
+        </div>
+        <div class="doc-stage" id="docStage"></div>
+      </section>
+
+      <div class="gutter" id="rightGutter" aria-hidden="true"></div>
+
+      <aside class="pane right-pane" data-mobile-pane="chat">
+        <div class="pane-head">
+          <div class="chat-model">
+            <select class="model-select" id="chatModel" aria-label="Active AI model">
+              <option value="">Configure a model</option>
+            </select>
+          </div>
+          <div class="head-actions">
+            <button class="icon-btn tooltip" id="hideChatPanel" data-tip="Hide chat" aria-label="Hide chat" data-icon="arrow-right"></button>
+            <button class="icon-btn tooltip" id="saveChat" data-tip="Save chat as Markdown" aria-label="Save chat as Markdown" data-icon="download"></button>
+            <button class="icon-btn tooltip" id="chatHistory" data-tip="Chat history" aria-label="Chat history" data-icon="history"></button>
+            <button class="icon-btn tooltip" id="newChat" data-tip="New chat" aria-label="New chat" data-icon="edit"></button>
+          </div>
+        </div>
+        <div class="history-popover" id="historyPopover">
+          <div class="history-head"><strong>Chat history</strong><button class="icon-btn" id="closeHistory" aria-label="Close chat history" data-icon="x"></button></div>
+          <div class="history-list" id="historyList"></div>
+        </div>
+        <div class="messages" id="messages" aria-live="polite"></div>
+        <div class="composer">
+          <div class="context-strip" id="contextStrip"></div>
+          <div class="compose-box">
+            <textarea class="prompt" id="prompt" rows="1" placeholder="Ask about your workspace…"></textarea>
+            <div class="compose-actions">
+              <button class="icon-btn tooltip" id="attachCurrent" data-tip="Attach current file" aria-label="Attach current file" data-icon="paperclip"></button>
+              <span class="compose-hint">Enter to send · Shift + Enter for new line</span>
+              <button class="send-btn" id="sendBtn" aria-label="Send message" data-icon="arrow-up"></button>
+            </div>
+          </div>
+          <div class="privacy-note">Files are sent only to your configured AI endpoint.</div>
+        </div>
+      </aside>
+    </main>
+
+    <nav class="mobile-tabs" aria-label="Workspace views">
+      <button class="mobile-tab active" data-tab="files" data-icon-before="files">Files</button>
+      <button class="mobile-tab" data-tab="document" data-icon-before="file-text">Document</button>
+      <button class="mobile-tab" data-tab="chat" data-icon-before="message">Chat</button>
+    </nav>
+
+    <footer class="statusbar">
+      <div class="status-left" id="statusText">Ready</div>
+      <div class="status-item"><span class="status-dot" id="providerDot"></span><span id="providerLabel">AI not configured</span></div>
+      <div class="status-item" id="fileCount">0 files</div>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 id="settingsTitle">Diopside settings</h2>
+        <button class="icon-btn" id="closeSettings" aria-label="Close settings" data-icon="x"></button>
+      </div>
+      <div class="modal-body">
+        <section class="settings-section">
+          <h3 class="section-title">Appearance</h3>
+          <p class="section-copy">Choose the workspace theme and interface text size.</p>
+          <div class="field">
+            <label for="themeSelect">Theme</label>
+            <select class="select" id="themeSelect">
+              <optgroup label="Dark themes">
+                <option value="neon-city">Neon City</option>
+                <option value="night-owl">Night Owl</option>
+                <option value="tokyo-night">Tokyo Night</option>
+                <option value="abyss">Abyss</option>
+                <option value="neon-glow">Neon Glow</option>
+              </optgroup>
+              <optgroup label="Light themes">
+                <option value="visual-studio-light">Visual Studio Light</option>
+                <option value="github-light">GitHub Light</option>
+                <option value="solarized-light">Solarized Light</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="field">
+            <label for="textSize">Text size</label>
+            <div class="range-row">
+              <input id="textSize" type="range" min="0.85" max="1.3" step="0.05" value="1">
+              <span class="range-value" id="textSizeValue">100%</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="checkbox-row" for="showHidden">
+              <input id="showHidden" type="checkbox">
+              <span>Show hidden files and folders</span>
+            </label>
+            <div class="field-help">Items whose names begin with a dot, including .DS_Store, are hidden by default.</div>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="section-title">Workspace folder</h3>
+          <p class="section-copy">Choose the parent folder Diopside can browse. Adding or editing files happens only after browser permission.</p>
+          <div class="folder-card">
+            <span data-icon="folder"></span>
+            <div class="folder-info">
+              <strong id="settingsFolderName">No folder selected</strong>
+              <span id="settingsFolderInfo">Choose a local folder to begin</span>
+            </div>
+            <button class="soft-btn" id="chooseFolderSettings">Choose folder</button>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="section-title">AI connection</h3>
+          <p class="section-copy">Connect to any OpenAI-compatible API. Your key is stored only in this browser.</p>
+          <div class="field">
+            <label for="apiUrl">API base URL</label>
+            <input class="input" id="apiUrl" type="url" placeholder="https://api.openai.com/v1" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="apiKey">API key</label>
+            <div class="input-row">
+              <div class="input-wrap">
+                <input class="input" id="apiKey" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false">
+                <button class="icon-btn" id="toggleKey" type="button" aria-label="Show API key" data-icon="eye"></button>
+              </div>
+              <button class="soft-btn" id="fetchModels" type="button" data-icon-before="download">Fetch models</button>
+            </div>
+            <div class="provider-status" id="providerStatus">Enter your connection details, then fetch available models.</div>
+          </div>
+          <div class="field">
+            <label>Active models</label>
+            <div class="models-list" id="modelsList"><div class="models-empty">No models fetched yet</div></div>
+          </div>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="section-title">Chat behavior</h3>
+          <p class="section-copy">These instructions are sent before each conversation.</p>
+          <div class="field">
+            <label for="systemPrompt">System instructions</label>
+            <textarea class="textarea" id="systemPrompt">You are a thoughtful workspace assistant. Use the attached file and folder context accurately. If the answer is not in the provided context, say so clearly.</textarea>
+          </div>
+          <div class="field">
+            <label for="temperature">Temperature</label>
+            <div class="range-row">
+              <input id="temperature" type="range" min="0" max="1.5" step="0.1" value="0.4">
+              <span class="range-value" id="temperatureValue">0.4</span>
+            </div>
+          </div>
+        </section>
+        <div class="settings-copyright">Copyright ©2026 Niklaus Hirt</div>
+      </div>
+      <div class="modal-foot">
+        <button class="soft-btn" id="cancelSettings">Cancel</button>
+        <button class="primary-btn" id="saveSettings">Save settings</button>
+      </div>
+    </div>
+  </div>
+
+  <input class="sr-only" id="folderFallback" type="file" webkitdirectory multiple>
+  <div class="context-menu" id="treeContextMenu" role="menu">
+    <button id="contextAttach" role="menuitem"><span data-icon="paperclip"></span><span id="contextAttachLabel">Add to chat</span></button>
+    <button id="contextFavorite" role="menuitem"><span data-icon="star"></span><span id="contextFavoriteLabel">Add to favorites</span></button>
+    <button id="contextShowInFinder" role="menuitem"><span data-icon="folder-open"></span><span id="contextShowInFinderLabel">Show in Finder</span></button>
+    <button id="contextNewNote" role="menuitem"><span data-icon="file-plus"></span><span>New Note</span></button>
+  </div>
+  <div class="modal-backdrop" id="saveChatModal" role="dialog" aria-modal="true" aria-labelledby="saveChatTitle">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-head">
+        <h2 id="saveChatTitle">Save chat as Markdown</h2>
+        <button class="icon-btn" id="closeSaveChat" aria-label="Close" data-icon="x"></button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="chatFileName">File name</label>
+          <input class="input" id="chatFileName" type="text" placeholder="conversation.md" spellcheck="false">
+        </div>
+        <div class="folder-card">
+          <span data-icon="folder"></span>
+          <div class="folder-info"><strong id="chatSaveDestination">Downloads</strong><span>Destination</span></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="soft-btn" id="cancelSaveChat">Cancel</button>
+        <button class="primary-btn" id="confirmSaveChat">Save Markdown</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="newNoteModal" role="dialog" aria-modal="true" aria-labelledby="newNoteTitle">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-head">
+        <h2 id="newNoteTitle">New Note</h2>
+        <button class="icon-btn" id="closeNewNote" aria-label="Close" data-icon="x"></button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label for="newNoteName">File name</label>
+          <input class="input" id="newNoteName" type="text" value="Untitled.md" spellcheck="false">
+        </div>
+        <div class="folder-card">
+          <span data-icon="folder"></span>
+          <div class="folder-info"><strong id="newNoteDestination">Workspace</strong><span>New note location</span></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="soft-btn" id="cancelNewNote">Cancel</button>
+        <button class="primary-btn" id="confirmNewNote">Create Note</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast-stack" id="toastStack" aria-live="assertive"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+      const icons = {
+        gem: '<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2.8 27 9.1l-2 12.5L16 29.2 7 21.6 5 9.1 16 2.8Z" stroke="currentColor" stroke-width="1.4"/><path d="m5.5 9.3 7.1 3.4L16 29l3.5-16.3 7-3.4M12.6 12.7 16 3.3l3.5 9.4-3.5 4-3.4-4Z" stroke="currentColor" stroke-width="1.1" opacity=".8"/></svg>',
+        folder: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 6.8c0-1 .8-1.8 1.8-1.8h4l2 2h7.4c1 0 1.8.8 1.8 1.8v8.4c0 1-.8 1.8-1.8 1.8H5.3c-1 0-1.8-.8-1.8-1.8V6.8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+        'folder-open': '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 8V6.8c0-1 .8-1.8 1.8-1.8h4l2 2h7.2c1 0 1.8.8 1.8 1.8v1.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4.3 19h13.8c.8 0 1.5-.5 1.7-1.3l1.5-5.4A1.8 1.8 0 0 0 19.6 10H6.1c-.8 0-1.5.5-1.7 1.3L2.6 17a1.6 1.6 0 0 0 1.7 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+        'folder-plus': '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 6.8c0-1 .8-1.8 1.8-1.8h4l2 2h7.4c1 0 1.8.8 1.8 1.8v8.4c0 1-.8 1.8-1.8 1.8H5.3c-1 0-1.8-.8-1.8-1.8V6.8Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 10v6m-3-3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+        'file-plus': '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h7l5 5v12H6v-17Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3.8V9h4.8M12 12v6m-3-3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+        file: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h7l5 5v12H6v-17Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3.8V9h4.8" stroke="currentColor" stroke-width="1.5"/></svg>',
+        'file-text': '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h7l5 5v12H6v-17Z" stroke="currentColor" stroke-width="1.5"/><path d="M13 3.8V9h4.8M9 13h6m-6 3h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+        files: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 3.5h7l4 4v12H8v-16Z" stroke="currentColor" stroke-width="1.5"/><path d="M15 3.8V8h3.8M5 7v13.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+        chevron: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'arrow-left': '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m0 0 5-5m-5 5 5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'arrow-right': '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        search: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.6"/><path d="m15.5 15.5 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+        x: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+        settings: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M19.1 13.4a7.5 7.5 0 0 0 0-2.8l2-1.5-2-3.4-2.5 1a8 8 0 0 0-2.4-1.4L13.8 2h-4l-.4 3.3A8 8 0 0 0 7 6.7l-2.5-1-2 3.4 2 1.5a7.5 7.5 0 0 0 0 2.8l-2 1.5 2 3.4 2.5-1a8 8 0 0 0 2.4 1.4l.4 3.3h4l.4-3.3a8 8 0 0 0 2.4-1.4l2.5 1 2-3.4-2-1.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+        refresh: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 8V4m0 0h-4m4 0-3.2 3.2A7.3 7.3 0 1 0 19 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        paperclip: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8.2 12.8 6.1-6.1a3 3 0 0 1 4.2 4.2l-8.3 8.3a4.5 4.5 0 0 1-6.4-6.4l8-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+        external: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 5h6v6m0-6-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 14v5H5V6h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        edit: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.5 6.5 17.5 10.5M5 19l1-4 9.8-9.8a2.1 2.1 0 0 1 3 3L9 18l-4 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+        sliders: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h5m4 0h7M4 17h9m4 0h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="7" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="15" cy="17" r="2" stroke="currentColor" stroke-width="1.5"/></svg>',
+        message: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v12H9l-5 3V5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 9h8m-8 4h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+        'arrow-up': '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5m0 0-5 5m5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        eye: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 12s3.2-6 9-6 9 6 9 6-3.2 6-9 6-9-6-9-6Z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>',
+        'eye-off': '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4 20 20M9.8 6.3A8.6 8.6 0 0 1 12 6c5.8 0 9 6 9 6a13 13 0 0 1-2.2 3.1M6.4 7.5A14.7 14.7 0 0 0 3 12s3.2 6 9 6c.8 0 1.6-.1 2.3-.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" stroke="currentColor" stroke-width="1.5"/></svg>',
+        download: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        history: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5v5h5M5.2 9.5A7.5 7.5 0 1 1 5 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+        star: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 2.7 5.5 6 .9-4.35 4.2 1 6L12 16.8l-5.35 2.8 1-6L3.3 9.4l6-.9L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+        trash: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3m2 0-1 13H8L7 7m3 4v5m4-5v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        image: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="10" r="1.5" stroke="currentColor"/><path d="m5 18 5-5 3 3 2-2 4 4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+        code: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8.5 7-5 5 5 5M15.5 7l5 5-5 5M14 4l-4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        pdf: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h7l5 5v12H6v-17Z" stroke="currentColor" stroke-width="1.5"/><path d="M13 3.8V9h4.8M8.5 15h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+        spark: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3c.4 4.9 2.4 8.1 7 9-4.6.9-6.6 4.1-7 9-.4-4.9-2.4-8.1-7-9 4.6-.9 6.6-4.1 7-9Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>'
+      };
+
+      const applyIcons = (root = document) => {
+        $$('[data-icon]', root).forEach(el => { el.innerHTML = icons[el.dataset.icon] || icons.file; });
+        $$('[data-icon-before]', root).forEach(el => el.insertAdjacentHTML('afterbegin', icons[el.dataset.iconBefore] || ''));
+      };
+      applyIcons();
+
+      const defaultSettings = {
+        apiUrl: 'https://api.openai.com/v1', apiKey: '', models: [], activeModels: [], currentModel: '',
+        systemPrompt: 'You are a thoughtful workspace assistant. Use the attached file and folder context accurately. If the answer is not in the provided context, say so clearly.',
+        temperature: 0.4,
+        textScale: 1,
+        theme: 'neon-city',
+        showHidden: false
+      };
+
+      const state = {
+        rootHandle: null,
+        rootName: '',
+        tree: [],
+        nodes: new Map(),
+        expanded: new Set(),
+        selected: null,
+        tabs: [],
+        activeTabPath: '',
+        attachments: [],
+        messages: [],
+        chatHistory: loadChatHistory(),
+        currentChatId: localStorage.getItem('diopside.currentChat.v1') || '',
+        favorites: loadFavorites(),
+        objectUrl: null,
+        markdownSource: '',
+        cachedDocument: null,
+        editorDirty: false,
+        editorNode: null,
+        editorHistory: [],
+        editorHistoryIndex: -1,
+        editorHistoryTimer: null,
+        editorHistoryLock: false,
+        editorScrollSyncing: false,
+        contextNode: null,
+        contextDirectory: null,
+        dragDepth: 0,
+        draggedNodeId: '',
+        moveTargetId: '',
+        loading: false,
+        fileCount: 0,
+        layout: loadLayout(),
+        ui: loadUiState(),
+        settings: loadSettings()
+      };
+
+      function loadSettings() {
+        try { return { ...defaultSettings, ...JSON.parse(localStorage.getItem('diopside.settings.v1') || '{}') }; }
+        catch { return { ...defaultSettings }; }
+      }
+
+      function saveSettingsStore() {
+        localStorage.setItem('diopside.settings.v1', JSON.stringify(state.settings));
+      }
+
+      function loadLayout() {
+        const defaultVisible = !window.matchMedia('(max-width: 1024px)').matches;
+        try {
+          const saved = JSON.parse(localStorage.getItem('diopside.layout.v1') || '{}');
+          return {
+            left: Number(saved.left) || 284,
+            right: Number(saved.right) || 380,
+            filesVisible: typeof saved.filesVisible === 'boolean' ? saved.filesVisible : defaultVisible,
+            chatVisible: typeof saved.chatVisible === 'boolean' ? saved.chatVisible : defaultVisible
+          };
+        } catch { return { left: 284, right: 380, filesVisible: defaultVisible, chatVisible: defaultVisible }; }
+      }
+
+      function applyLayout() {
+        document.documentElement.style.setProperty('--left-w', `${Math.max(210, Math.min(460, Number(state.layout.left) || 284))}px`);
+        document.documentElement.style.setProperty('--right-w', `${Math.max(300, Math.min(560, Number(state.layout.right) || 380))}px`);
+        applyPanelVisibility();
+      }
+
+      function applyPanelVisibility() {
+        const phoneLayout = window.matchMedia('(max-width: 760px)').matches;
+        const compactLayout = window.matchMedia('(max-width: 1024px)').matches;
+        let filesVisible = state.layout.filesVisible !== false;
+        let chatVisible = state.layout.chatVisible !== false;
+        if (compactLayout && filesVisible && chatVisible) {
+          if (state.ui.mobilePane === 'chat') { filesVisible = false; state.layout.filesVisible = false; }
+          else { chatVisible = false; state.layout.chatVisible = false; }
+          try { localStorage.setItem('diopside.layout.v1', JSON.stringify(state.layout)); } catch {}
+        }
+        const workspace = $('#workspace');
+        workspace.classList.toggle('files-hidden', !filesVisible);
+        workspace.classList.toggle('chat-hidden', !chatVisible);
+        [['#toggleBrowserPanel', filesVisible], ['#toggleChatPanel', chatVisible]].forEach(([selector, visible]) => {
+          const button = $(selector); button.classList.toggle('active', visible); button.setAttribute('aria-pressed', String(visible));
+        });
+        if (phoneLayout) {
+          const active = filesVisible ? 'files' : chatVisible ? 'chat' : 'document';
+          $$('.mobile-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === active));
+          state.ui.mobilePane = active;
+        }
+      }
+
+      function togglePanel(side, forceVisible) {
+        const key = side === 'files' ? 'filesVisible' : 'chatVisible';
+        const next = typeof forceVisible === 'boolean' ? forceVisible : state.layout[key] === false;
+        state.layout[key] = next;
+        if (next && window.matchMedia('(max-width: 1024px)').matches) {
+          state.layout[side === 'files' ? 'chatVisible' : 'filesVisible'] = false;
+        }
+        applyPanelVisibility();
+        try { localStorage.setItem('diopside.layout.v1', JSON.stringify(state.layout)); } catch {}
+        if (window.matchMedia('(max-width: 760px)').matches) {
+          try { localStorage.setItem('diopside.ui.v1', JSON.stringify(state.ui)); } catch {}
+        }
+      }
+
+      function loadUiState() {
+        try { return { search: '', prompt: '', mobilePane: 'files', ...JSON.parse(localStorage.getItem('diopside.ui.v1') || '{}') }; }
+        catch { return { search: '', prompt: '', mobilePane: 'files' }; }
+      }
+
+      function restoreWorkspaceHint() {
+        const name = localStorage.getItem('diopside.workspaceName.v1'); if (!name || state.rootName) return;
+        $('#workspaceName').textContent = `${name} · re-open to restore access`;
+        $('#settingsFolderName').textContent = name; $('#settingsFolderInfo').textContent = 'Re-open the folder if your browser does not preserve folder permission';
+      }
+
+      function serializeWorkspaceTree(nodes) {
+        return nodes.map(node => node.kind === 'directory'
+          ? [node.name, 1, serializeWorkspaceTree(node.children || [])]
+          : [node.name, 0]);
+      }
+
+      function hydrateWorkspaceTree(nodes, parentPath = '') {
+        return (Array.isArray(nodes) ? nodes : []).map(saved => {
+          const compact = Array.isArray(saved); const name = compact ? saved[0] : saved.name;
+          const path = compact ? [parentPath, name].filter(Boolean).join('/') : saved.path;
+          const kind = compact ? (saved[1] === 1 ? 'directory' : 'file') : saved.kind;
+          const node = { id: nodeId(path), name, path, kind, children: [] };
+          node.children = hydrateWorkspaceTree(compact ? saved[2] || [] : saved.children || [], path); state.nodes.set(node.id, node); return node;
+        });
+      }
+
+      function persistWorkspaceSnapshot() {
+        if (!state.rootName) return;
+        const activeInput = $('#markdownInput');
+        if (activeInput && state.editorNode) {
+          state.cachedDocument = {
+            path: state.editorNode.path, name: state.editorNode.name, kind: 'text', content: activeInput.value,
+            savedContent: state.markdownSource, editing: true, dirty: activeInput.value !== state.markdownSource
+          };
+        }
+        const snapshot = {
+          version: 4, rootName: state.rootName, fileCount: state.fileCount,
+          tree: serializeWorkspaceTree(state.tree), selectedPath: state.selected?.path || '',
+          expandedPaths: [...state.expanded].map(id => id.replace(/^node:/, '')),
+          attachmentPaths: state.attachments.map(node => node.path),
+          tabs: state.tabs.map(tab => ({ path: tab.path, pinned: !!tab.pinned })), activeTabPath: state.activeTabPath,
+          cachedDocument: state.cachedDocument
+        };
+        try { localStorage.setItem('diopside.workspace.v2', JSON.stringify(snapshot)); }
+        catch {
+          snapshot.cachedDocument = null;
+          try { localStorage.setItem('diopside.workspace.v2', JSON.stringify(snapshot)); } catch { /* The folder can still be reopened manually. */ }
+        }
+      }
+
+      function restoreWorkspaceSnapshot() {
+        try {
+          const snapshot = JSON.parse(localStorage.getItem('diopside.workspace.v2') || 'null');
+          if (!snapshot?.rootName || !Array.isArray(snapshot.tree)) return false;
+          state.rootName = snapshot.rootName; state.fileCount = Number(snapshot.fileCount) || 0; state.nodes.clear();
+          state.tree = hydrateWorkspaceTree(snapshot.tree);
+          state.expanded = new Set((snapshot.expandedPaths || []).map(path => nodeId(path)).filter(id => state.nodes.has(id)));
+          state.selected = snapshot.selectedPath ? state.nodes.get(nodeId(snapshot.selectedPath)) || null : null;
+          state.attachments = (snapshot.attachmentPaths || []).map(path => state.nodes.get(nodeId(path))).filter(Boolean);
+          state.tabs = (snapshot.tabs || []).filter(tab => state.nodes.get(nodeId(tab.path))?.kind === 'file').map(tab => ({ path: tab.path, pinned: !!tab.pinned }));
+          state.activeTabPath = state.tabs.some(tab => tab.path === snapshot.activeTabPath) ? snapshot.activeTabPath : '';
+          state.cachedDocument = snapshot.cachedDocument?.path ? snapshot.cachedDocument : null;
+          if (state.cachedDocument?.kind === 'text') {
+            const node = state.nodes.get(nodeId(state.cachedDocument.path)); if (node) node.cachedContent = state.cachedDocument.content || '';
+          }
+          $('#workspaceName').textContent = `${state.rootName} · restored`;
+          $('#settingsFolderName').textContent = state.rootName;
+          $('#settingsFolderInfo').textContent = `${state.fileCount.toLocaleString()} files restored · re-open folder for write access`;
+          $('#fileCount').textContent = `${state.fileCount.toLocaleString()} file${state.fileCount === 1 ? '' : 's'}`;
+          setStatus(`${state.rootName} restored from local storage`);
+          return true;
+        } catch { return false; }
+      }
+
+      function persistApplicationState() {
+        state.ui = {
+          search: $('#fileSearch')?.value || '', prompt: $('#prompt')?.value || '',
+          mobilePane: $('.mobile-tab.active')?.dataset.tab || 'files'
+        };
+        try {
+          localStorage.setItem('diopside.ui.v1', JSON.stringify(state.ui));
+          localStorage.setItem('diopside.layout.v1', JSON.stringify(state.layout));
+          localStorage.setItem('diopside.favorites.v1', JSON.stringify(state.favorites));
+        } catch { /* Individual state writers handle quota errors during normal use. */ }
+        try { saveSettingsStore(); } catch {}
+        persistCurrentChat(); persistWorkspaceSnapshot();
+      }
+
+      async function restoreSelectedWorkspaceView() {
+        if (!state.selected) return;
+        if (state.selected.kind === 'directory') { selectDirectory(state.selected, false); return; }
+        const cached = state.cachedDocument ? { ...state.cachedDocument } : null;
+        await selectFile(state.selected, { fromTab: state.tabs.some(tab => tab.path === state.selected.path) });
+        if (cached?.editing && ['md', 'markdown'].includes(extOf(state.selected.name))) {
+          state.markdownSource = cached.savedContent ?? cached.content ?? '';
+          state.selected.cachedContent = cached.content ?? state.markdownSource;
+          state.cachedDocument = cached;
+          openMarkdownEditor();
+          const input = $('#markdownInput');
+          if (input) { input.value = cached.content ?? state.markdownSource; input.dispatchEvent(new Event('input', { bubbles: true })); }
+        }
+      }
+
+      function loadChatHistory() {
+        try {
+          const value = JSON.parse(localStorage.getItem('diopside.chats.v1') || '[]');
+          return Array.isArray(value) ? value.filter(chat => chat?.id && Array.isArray(chat.messages)) : [];
+        } catch { return []; }
+      }
+
+      function loadFavorites() {
+        try {
+          const value = JSON.parse(localStorage.getItem('diopside.favorites.v1') || '[]');
+          return Array.isArray(value) ? value.filter(item => item?.workspace && item?.path) : [];
+        } catch { return []; }
+      }
+
+      function applyTextScale(value) {
+        const scale = Math.max(.85, Math.min(1.3, Number(value) || 1));
+        document.documentElement.style.setProperty('--text-scale', scale);
+      }
+
+      function applyTheme(value) {
+        const themes = ['neon-city','night-owl','tokyo-night','abyss','neon-glow','visual-studio-light','github-light','solarized-light'];
+        const theme = themes.includes(value) ? value : 'neon-city';
+        const light = ['visual-studio-light','github-light','solarized-light'].includes(theme);
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.themeMode = light ? 'light' : 'dark';
+        document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+        const colors = { 'neon-city':'#090819', 'night-owl':'#011627', 'tokyo-night':'#16161e', abyss:'#000c18', 'neon-glow':'#05010f', 'visual-studio-light':'#f3f3f3', 'github-light':'#f6f8fa', 'solarized-light':'#fdf6e3' };
+        const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = colors[theme];
+      }
+
+      function applyNativePlatformLabels() {
+        const label = window.diopsideNative?.platform === 'ios' ? 'Show in Files' : 'Show in Finder';
+        const button = $('#showInFinder'); const menuLabel = $('#contextShowInFinderLabel');
+        if (button) { button.dataset.tip = label; button.setAttribute('aria-label', label); }
+        if (menuLabel) menuLabel.textContent = label;
+      }
+
+      function escapeHtml(value = '') {
+        return String(value).replace(/[&<>'"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
+      }
+
+      function normalizeUrl(url) { return String(url || '').trim().replace(/\/+$/, ''); }
+      function extOf(name = '') { const m = name.toLowerCase().match(/\.([^.]+)$/); return m ? m[1] : ''; }
+      function formatBytes(bytes) {
+        if (!Number.isFinite(bytes)) return '';
+        const units = ['B', 'KB', 'MB', 'GB']; let n = bytes; let i = 0;
+        while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+        return `${n < 10 && i ? n.toFixed(1) : Math.round(n)} ${units[i]}`;
+      }
+      function isTextFile(name) {
+        const ext = extOf(name);
+        return ['md','markdown','txt','text','json','js','mjs','cjs','ts','tsx','jsx','css','scss','html','htm','xml','yaml','yml','toml','ini','cfg','conf','csv','tsv','py','rb','go','rs','java','c','h','cpp','hpp','cs','php','sh','zsh','fish','sql','log'].includes(ext) || !ext;
+      }
+      function iconForFile(name) {
+        const ext = extOf(name);
+        if (['png','jpg','jpeg','gif','webp','svg','avif','bmp'].includes(ext)) return 'image';
+        if (ext === 'pdf') return 'pdf';
+        if (['html','htm','js','ts','css','json','xml','py','sh','yaml','yml'].includes(ext)) return 'code';
+        return 'file-text';
+      }
+      function toast(message, type = '') {
+        const el = document.createElement('div');
+        el.className = `toast ${type}`; el.textContent = message;
+        $('#toastStack').appendChild(el);
+        setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(5px)'; }, 3400);
+        setTimeout(() => el.remove(), 3700);
+      }
+      function setStatus(text) { $('#statusText').textContent = text; }
+
+      function showWelcome() {
+        cleanupObjectUrl();
+        $('#docName').textContent = 'Welcome'; $('#docPath').textContent = '';
+        $('#docIcon').innerHTML = icons.file;
+        $('#attachSelected').disabled = true; $('#attachTreeSelected').disabled = true; $('#showInFinder').disabled = true; $('#openExternal').disabled = true; $('#editMarkdown').disabled = true;
+        $('#docStage').innerHTML = `
+          <div class="welcome"><div class="welcome-inner">
+            <div class="welcome-gem">${icons.gem}</div>
+            <h1>Your files, in focus.</h1>
+            <p>Open a local folder to browse documents, preview their contents, and bring selected files or entire folders into an AI conversation.</p>
+            <div class="welcome-actions">
+              <button class="primary-btn" id="welcomeOpen">${icons['folder-open']} Open a folder</button>
+              <button class="soft-btn" id="welcomeSettings">${icons.settings} Configure AI</button>
+            </div>
+            <div class="welcome-note">Private by design · Folder access remains under browser control</div>
+          </div></div>`;
+        $('#welcomeOpen').addEventListener('click', chooseFolder);
+        $('#welcomeSettings').addEventListener('click', openSettings);
+      }
+
+      function cleanupObjectUrl() {
+        if (state.objectUrl) { URL.revokeObjectURL(state.objectUrl); state.objectUrl = null; }
+      }
+
+      async function getNodeFile(node) {
+        if (!node) throw new Error('No file selected');
+        if (node.file) return node.file;
+        if (node.handle?.getFile) return node.handle.getFile();
+        if (typeof node.cachedContent === 'string') return new File([node.cachedContent], node.name, { type: 'text/plain;charset=utf-8' });
+        throw new Error('Re-open the workspace folder to access this file. The folder tree and application state are still restored.');
+      }
+
+      function nodeId(path) { return `node:${path}`; }
+
+      async function scanHandleDirectory(handle, path, depth = 0, counter = { n: 0, lastYield: 0 }) {
+        const children = [];
+        for await (const entry of handle.values()) {
+          counter.n++;
+          if (counter.n - counter.lastYield >= 250) {
+            counter.lastYield = counter.n;
+            setStatus(`Indexing ${state.rootName} · ${counter.n.toLocaleString()} items…`);
+            $('#fileCount').textContent = `${state.fileCount.toLocaleString()} files · indexing`;
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+          const childPath = path ? `${path}/${entry.name}` : entry.name;
+          const node = { id: nodeId(childPath), name: entry.name, path: childPath, kind: entry.kind, handle: entry, children: [] };
+          state.nodes.set(node.id, node);
+          if (entry.kind === 'directory') node.children = await scanHandleDirectory(entry, childPath, depth + 1, counter);
+          else state.fileCount++;
+          children.push(node);
+        }
+        return children.sort((a, b) => a.kind === b.kind ? a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }) : (a.kind === 'directory' ? -1 : 1));
+      }
+
+      function buildFallbackTree(files) {
+        const root = { children: [], dirs: new Map() };
+        for (const file of files) {
+          const parts = file.webkitRelativePath.split('/');
+          if (!state.rootName) state.rootName = parts.shift() || 'Selected folder'; else parts.shift();
+          let current = root; let path = '';
+          parts.forEach((part, idx) => {
+            path = path ? `${path}/${part}` : part;
+            if (idx === parts.length - 1) {
+              const node = { id: nodeId(path), name: part, path, kind: 'file', file, children: [] };
+              current.children.push(node); state.nodes.set(node.id, node); state.fileCount++;
+            } else {
+              if (!current.dirs.has(part)) {
+                const node = { id: nodeId(path), name: part, path, kind: 'directory', children: [], dirs: new Map() };
+                current.dirs.set(part, node); current.children.push(node); state.nodes.set(node.id, node);
+              }
+              current = current.dirs.get(part);
+            }
+          });
+        }
+        const sort = nodes => nodes.sort((a,b) => a.kind === b.kind ? a.name.localeCompare(b.name, undefined, { numeric: true }) : a.kind === 'directory' ? -1 : 1).map(n => { if (n.children?.length) sort(n.children); return n; });
+        return sort(root.children);
+      }
+
+      async function chooseFolder() {
+        try {
+          if ('showDirectoryPicker' in window) {
+            const handle = await window.showDirectoryPicker({ mode: 'read', startIn: 'documents' });
+            await loadWorkspaceHandle(handle, true);
+          } else {
+            $('#folderFallback').click();
+          }
+        } catch (error) {
+          if (error.name !== 'AbortError') { toast(`Could not open folder: ${error.message}`, 'error'); setStatus('Folder access failed'); }
+        }
+      }
+
+      async function loadWorkspaceHandle(handle, persist = false) {
+        const savedWorkspace = localStorage.getItem('diopside.workspaceName.v1'); const savedPath = localStorage.getItem('diopside.activePath.v1');
+        let savedSnapshot = null;
+        try { savedSnapshot = JSON.parse(localStorage.getItem('diopside.workspace.v2') || 'null'); } catch {}
+        const sameWorkspace = savedWorkspace === handle.name || savedSnapshot?.rootName === handle.name;
+        const expandedPaths = sameWorkspace ? savedSnapshot?.expandedPaths || [] : [];
+        const attachmentPaths = sameWorkspace ? savedSnapshot?.attachmentPaths || [] : [];
+        const savedTabs = sameWorkspace ? savedSnapshot?.tabs || [] : [];
+        const savedActiveTabPath = sameWorkspace ? savedSnapshot?.activeTabPath || '' : '';
+        const savedCachedDocument = sameWorkspace && savedSnapshot?.cachedDocument?.path ? savedSnapshot.cachedDocument : null;
+        state.rootHandle = handle; state.rootName = handle.name; state.fileCount = 0; state.nodes.clear(); state.expanded.clear(); state.selected = null; state.tabs = []; state.activeTabPath = ''; state.attachments = []; state.cachedDocument = savedCachedDocument;
+        localStorage.setItem('diopside.workspaceName.v1', handle.name);
+        setStatus(`Indexing ${handle.name}…`); $('#fileTree').innerHTML = '<div class="tree-empty">Reading folder…</div>';
+        state.tree = await scanHandleDirectory(handle, '');
+        if (sameWorkspace && savedPath) state.selected = state.nodes.get(nodeId(savedPath)) || null;
+        state.expanded = new Set(expandedPaths.map(path => nodeId(path)).filter(id => state.nodes.has(id)));
+        state.attachments = attachmentPaths.map(path => state.nodes.get(nodeId(path))).filter(Boolean);
+        state.tabs = savedTabs.filter(tab => state.nodes.get(nodeId(tab.path))?.kind === 'file').map(tab => ({ path: tab.path, pinned: !!tab.pinned }));
+        state.activeTabPath = state.tabs.some(tab => tab.path === savedActiveTabPath) ? savedActiveTabPath : '';
+        if (savedCachedDocument?.kind === 'text') {
+          const cachedNode = state.nodes.get(nodeId(savedCachedDocument.path)); if (cachedNode) cachedNode.cachedContent = savedCachedDocument.content || '';
+        }
+        if (persist) await storeHandle(handle);
+        finishWorkspaceLoad();
+      }
+
+      function finishWorkspaceLoad() {
+        $('#workspaceName').textContent = state.rootName || 'No folder selected';
+        $('#settingsFolderName').textContent = state.rootName || 'No folder selected';
+        $('#settingsFolderInfo').textContent = state.rootName ? `${state.fileCount.toLocaleString()} files available · browser-managed access` : 'Choose a local folder to begin';
+        $('#fileCount').textContent = `${state.fileCount.toLocaleString()} file${state.fileCount === 1 ? '' : 's'}`;
+        renderTree(); renderDocumentTabs(); renderAttachments(); $('#attachTreeSelected').disabled = !state.selected; setStatus(`${state.rootName} indexed`); persistWorkspaceSnapshot();
+        if (state.selected?.kind === 'directory') selectDirectory(state.selected, false);
+        else if (state.selected?.kind === 'file') restoreSelectedWorkspaceView();
+      }
+
+      function selectedDirectoryNode() {
+        if (state.selected?.kind === 'directory') return state.selected;
+        if (state.selected?.kind === 'file') {
+          const parentPath = state.selected.path.split('/').slice(0, -1).join('/');
+          return parentPath ? state.nodes.get(nodeId(parentPath)) || null : null;
+        }
+        return null;
+      }
+
+      function activeFolderPath(directory = selectedDirectoryNode()) {
+        return [state.rootName, directory?.path].filter(Boolean).join('/') || 'workspace';
+      }
+
+      function dropTargetName() {
+        return activeFolderPath();
+      }
+
+      async function directoryHandleForPath(path = '') {
+        if (!state.rootHandle?.getFileHandle) throw new Error('This browser opened the folder in read-only compatibility mode');
+        let handle = state.rootHandle;
+        for (const part of path.split('/').filter(Boolean)) handle = await handle.getDirectoryHandle(part);
+        return handle;
+      }
+
+      async function directoryHandleForNode(directory = selectedDirectoryNode()) {
+        if (!directory) return directoryHandleForPath('');
+        if (directory.handle?.getFileHandle) return directory.handle;
+        return directoryHandleForPath(directory.path);
+      }
+
+      async function currentDropDirectoryHandle() { return directoryHandleForNode(); }
+
+      async function availableDropName(directory, originalName) {
+        const dot = originalName.lastIndexOf('.'); const base = dot > 0 ? originalName.slice(0, dot) : originalName; const extension = dot > 0 ? originalName.slice(dot) : '';
+        for (let index = 0; index < 1000; index++) {
+          const candidate = index ? `${base} (${index})${extension}` : originalName;
+          try { await directory.getFileHandle(candidate); }
+          catch (error) { if (error.name === 'NotFoundError') return candidate; throw error; }
+        }
+        throw new Error(`Could not create a unique name for ${originalName}`);
+      }
+
+      async function directoryContainsEntry(directory, name) {
+        for await (const entry of directory.values()) if (entry.name === name) return true;
+        return false;
+      }
+
+      async function availableMoveName(directory, originalName) {
+        const dot = originalName.lastIndexOf('.'); const base = dot > 0 ? originalName.slice(0, dot) : originalName; const extension = dot > 0 ? originalName.slice(dot) : '';
+        for (let index = 0; index < 1000; index++) {
+          const candidate = index ? `${base} (${index})${extension}` : originalName;
+          if (!await directoryContainsEntry(directory, candidate)) return candidate;
+        }
+        throw new Error(`Could not create a unique name for ${originalName}`);
+      }
+
+      async function requireWritePermission() {
+        let permission = await state.rootHandle?.queryPermission?.({ mode: 'readwrite' });
+        if (permission !== 'granted') permission = await state.rootHandle?.requestPermission?.({ mode: 'readwrite' });
+        if (permission !== 'granted') throw new Error('Write permission was not granted');
+      }
+
+      function parentPath(path = '') { return path.split('/').slice(0, -1).join('/'); }
+      function pathIsWithin(path, ancestor) { return path === ancestor || path.startsWith(`${ancestor}/`); }
+      function moveDestinationPath(directory) { return directory?.path || ''; }
+
+      function canMoveNodeToDirectory(node, directory) {
+        if (!node || !state.rootHandle?.getFileHandle) return false;
+        const destinationPath = moveDestinationPath(directory);
+        if (parentPath(node.path) === destinationPath) return false;
+        if (node.kind === 'directory' && (destinationPath === node.path || destinationPath.startsWith(`${node.path}/`))) return false;
+        return true;
+      }
+
+      async function copyNodeToDirectory(node, destination, targetName) {
+        if (node.kind === 'file') {
+          const source = await getNodeFile(node); const target = await destination.getFileHandle(targetName, { create: true });
+          const writable = await target.createWritable(); await writable.write(source); await writable.close();
+          return;
+        }
+        const target = await destination.getDirectoryHandle(targetName, { create: true });
+        for (const child of node.children || []) await copyNodeToDirectory(child, target, child.name);
+      }
+
+      function remapMovedWorkspaceState(sourcePath, targetPath) {
+        const remap = path => path && pathIsWithin(path, sourcePath) ? `${targetPath}${path.slice(sourcePath.length)}` : path;
+        const remapNode = node => {
+          if (!node || !pathIsWithin(node.path, sourcePath)) return;
+          node.path = remap(node.path); node.id = nodeId(node.path); node.name = node.path.split('/').pop();
+        };
+        remapNode(state.selected); remapNode(state.editorNode); state.attachments.forEach(remapNode);
+        state.tabs = state.tabs.map(tab => ({ ...tab, path: remap(tab.path) }));
+        state.activeTabPath = remap(state.activeTabPath);
+        state.expanded = new Set([...state.expanded].map(id => id.startsWith('node:') ? nodeId(remap(id.slice(5))) : id));
+        state.favorites = state.favorites.map(item => item.workspace === state.rootName && pathIsWithin(item.path, sourcePath)
+          ? { ...item, path: remap(item.path), name: remap(item.path).split('/').pop() }
+          : item);
+        if (state.cachedDocument?.path) state.cachedDocument.path = remap(state.cachedDocument.path);
+        localStorage.setItem('diopside.favorites.v1', JSON.stringify(state.favorites));
+        if (state.selected?.path) localStorage.setItem('diopside.activePath.v1', state.selected.path);
+      }
+
+      function clearMoveTargets() {
+        $$('.tree-row.move-target').forEach(row => row.classList.remove('move-target'));
+        $('#fileTree').classList.remove('move-target'); state.moveTargetId = '';
+      }
+
+      async function moveNodeToDirectory(node, destination = null) {
+        if (!canMoveNodeToDirectory(node, destination)) {
+          toast(parentPath(node?.path || '') === moveDestinationPath(destination) ? `${node?.name || 'The item'} is already in that folder.` : 'A folder cannot be moved into itself.', 'error');
+          return;
+        }
+        if (state.editorDirty && state.editorNode && pathIsWithin(state.editorNode.path, node.path)) {
+          toast('Save or cancel the Markdown edit before moving this item.', 'error');
+          return;
+        }
+        try {
+          const sourceName = node.name;
+          await requireWritePermission();
+          const destinationHandle = await directoryHandleForNode(destination); const targetName = await availableMoveName(destinationHandle, node.name);
+          const targetPath = [moveDestinationPath(destination), targetName].filter(Boolean).join('/');
+          if (typeof window.diopsideNativeMove === 'function') {
+            await window.diopsideNativeMove(node.path, targetPath);
+          } else {
+            const sourceParent = await directoryHandleForPath(parentPath(node.path));
+            try { await copyNodeToDirectory(node, destinationHandle, targetName); }
+            catch (error) { try { await destinationHandle.removeEntry(targetName, { recursive: true }); } catch {} throw error; }
+            if (!sourceParent.removeEntry) throw new Error('Moving items requires File System Access support');
+            await sourceParent.removeEntry(node.name, { recursive: node.kind === 'directory' });
+          }
+          remapMovedWorkspaceState(node.path, targetPath);
+          if (destination) state.expanded.add(destination.id);
+          setStatus(`Refreshing ${state.rootName}…`); await refreshWorkspacePreservingContext();
+          toast(`${sourceName} moved to ${activeFolderPath(destination)}${targetName === sourceName ? '' : ` as ${targetName}`}`);
+          setStatus(`${targetPath} moved`);
+        } catch (error) { toast(`Could not move ${node.name}: ${error.message}`, 'error'); setStatus('Move failed'); }
+      }
+
+      function openNewNote(directory = selectedDirectoryNode()) {
+        if (!state.rootHandle?.getFileHandle) { toast('Creating notes requires writable folder access in Chrome, Edge, or a compatible browser.', 'error'); return; }
+        state.contextDirectory = directory || null;
+        $('#newNoteName').value = 'Untitled.md'; $('#newNoteDestination').textContent = activeFolderPath(state.contextDirectory);
+        $('#newNoteModal').classList.add('open'); setTimeout(() => { $('#newNoteName').focus(); $('#newNoteName').select(); }, 40);
+      }
+
+      function closeNewNote() { $('#newNoteModal').classList.remove('open'); }
+
+      async function createNewNote() {
+        const button = $('#confirmNewNote'); const requestedName = safeMarkdownName($('#newNoteName').value); button.disabled = true;
+        try {
+          let permission = await state.rootHandle.queryPermission?.({ mode: 'readwrite' });
+          if (permission !== 'granted') permission = await state.rootHandle.requestPermission?.({ mode: 'readwrite' });
+          if (permission !== 'granted') throw new Error('Write permission was not granted');
+          const targetDirectory = state.contextDirectory; const directory = await directoryHandleForNode(targetDirectory); const name = await availableDropName(directory, requestedName);
+          const title = name.replace(/\.md$/i, '').replace(/[-_]+/g, ' ').trim() || 'Untitled';
+          const handle = await directory.getFileHandle(name, { create: true }); const writable = await handle.createWritable();
+          await writable.write(`# ${title}\n\n`); await writable.close();
+          const path = targetDirectory?.path ? `${targetDirectory.path}/${name}` : name;
+          closeNewNote(); await refreshWorkspacePreservingContext(); const node = state.nodes.get(nodeId(path)); if (node) await selectFile(node);
+          toast(`${name} created in ${activeFolderPath(targetDirectory)}`); setStatus(`${name} created`);
+        } catch (error) { toast(`Could not create note: ${error.message}`, 'error'); }
+        finally { button.disabled = false; state.contextDirectory = null; }
+      }
+
+      async function refreshWorkspacePreservingContext() {
+        const selectedId = state.selected?.id; const attachmentIds = state.attachments.map(node => node.id); const editorId = state.editorNode?.id;
+        state.fileCount = 0; state.nodes.clear(); state.tree = await scanHandleDirectory(state.rootHandle, '');
+        state.selected = selectedId ? state.nodes.get(selectedId) || null : null;
+        state.attachments = attachmentIds.map(id => state.nodes.get(id)).filter(Boolean);
+        state.tabs = state.tabs.filter(tab => state.nodes.get(nodeId(tab.path))?.kind === 'file');
+        if (!state.tabs.some(tab => tab.path === state.activeTabPath)) state.activeTabPath = '';
+        state.editorNode = editorId ? state.nodes.get(editorId) || state.editorNode : state.editorNode;
+        finishWorkspaceLoad();
+      }
+
+      async function handleFileDrop(event, destinationDirectory = selectedDirectoryNode()) {
+        event.preventDefault(); state.dragDepth = 0; $('#fileTree').classList.remove('drop-target');
+        const files = [...(event.dataTransfer?.files || [])].filter(file => file.size >= 0);
+        if (!files.length) { toast('Drop one or more files here', 'error'); return; }
+        if (!state.rootHandle?.getFileHandle) { toast('Adding files requires a browser with File System Access support, such as Chrome or Edge.', 'error'); return; }
+        try {
+          await requireWritePermission();
+          const directory = await directoryHandleForNode(destinationDirectory); const added = [];
+          for (const file of files) {
+            const name = await availableDropName(directory, file.name); const handle = await directory.getFileHandle(name, { create: true });
+            const writable = await handle.createWritable(); await writable.write(file); await writable.close(); added.push(name);
+          }
+          setStatus(`Refreshing ${state.rootName}…`); await refreshWorkspacePreservingContext();
+          const destination = activeFolderPath(destinationDirectory); toast(`${added.length} file${added.length === 1 ? '' : 's'} added to ${destination}`); setStatus(`${added.join(', ')} added`);
+        } catch (error) { toast(`Could not add file${files.length === 1 ? '' : 's'}: ${error.message}`, 'error'); setStatus('File drop failed'); }
+      }
+
+      $('#folderFallback').addEventListener('change', event => {
+        const files = [...event.target.files];
+        if (!files.length) return;
+        state.rootHandle = null; state.rootName = ''; state.fileCount = 0; state.nodes.clear(); state.expanded.clear(); state.selected = null; state.tabs = []; state.activeTabPath = ''; state.attachments = [];
+        state.tree = buildFallbackTree(files); localStorage.setItem('diopside.workspaceName.v1', state.rootName); finishWorkspaceLoad();
+        event.target.value = '';
+      });
+
+      function renderDocumentTabs() {
+        const bar = $('#docTabs'); bar.innerHTML = '';
+        state.tabs.forEach(tab => {
+          const node = state.nodes.get(nodeId(tab.path)); if (!node) return;
+          const element = document.createElement('div');
+          element.className = `doc-tab ${tab.pinned ? 'pinned' : 'preview'}${state.activeTabPath === tab.path ? ' active' : ''}`;
+          element.setAttribute('role', 'tab'); element.setAttribute('aria-selected', state.activeTabPath === tab.path ? 'true' : 'false'); element.title = tab.path;
+          element.innerHTML = `<span class="doc-tab-icon">${icons[iconForFile(node.name)] || icons.file}</span><span class="doc-tab-name">${escapeHtml(node.name)}</span><button class="doc-tab-close" aria-label="Close ${escapeHtml(node.name)}">${icons.x}</button>`;
+          element.addEventListener('click', event => { if (!event.target.closest('.doc-tab-close')) activateDocumentTab(tab.path); });
+          element.addEventListener('dblclick', event => { if (!event.target.closest('.doc-tab-close')) pinDocumentTab(node); });
+          element.querySelector('.doc-tab-close').addEventListener('click', event => { event.stopPropagation(); closeDocumentTab(tab.path); });
+          bar.appendChild(element);
+        });
+      }
+
+      function prepareDocumentTab(node, { pinned = false, fromTab = false } = {}) {
+        let tab = state.tabs.find(item => item.path === node.path);
+        if (!fromTab) {
+          state.tabs = state.tabs.filter(item => item.pinned || item.path === node.path);
+          tab = state.tabs.find(item => item.path === node.path);
+          if (!tab) { tab = { path: node.path, pinned: !!pinned }; state.tabs.push(tab); }
+          else if (pinned) tab.pinned = true;
+        } else if (!tab) {
+          tab = { path: node.path, pinned: !!pinned }; state.tabs.push(tab);
+        }
+        state.activeTabPath = node.path; renderDocumentTabs();
+      }
+
+      function pinDocumentTab(node) {
+        if (!node || node.kind !== 'file') return;
+        prepareDocumentTab(node, { pinned: true }); persistWorkspaceSnapshot();
+      }
+
+      function discardPreviewTabs() {
+        const before = state.tabs.length; state.tabs = state.tabs.filter(tab => tab.pinned); state.activeTabPath = '';
+        if (before !== state.tabs.length) persistWorkspaceSnapshot();
+        renderDocumentTabs();
+      }
+
+      function activateDocumentTab(path) {
+        const node = state.nodes.get(nodeId(path)); if (!node) return;
+        state.tabs = state.tabs.filter(tab => tab.pinned || tab.path === path); state.activeTabPath = path; renderDocumentTabs();
+        selectFile(node, { fromTab: true });
+      }
+
+      function closeDocumentTab(path) {
+        const index = state.tabs.findIndex(tab => tab.path === path); if (index < 0) return;
+        if (state.activeTabPath === path && state.editorDirty && state.editorNode?.path === path && !confirm('Close this tab and discard unsaved Markdown changes?')) return;
+        const wasActive = state.activeTabPath === path; state.tabs.splice(index, 1);
+        if (!wasActive) { renderDocumentTabs(); persistWorkspaceSnapshot(); return; }
+        state.activeTabPath = '';
+        const next = state.tabs[Math.min(index, state.tabs.length - 1)];
+        if (next) activateDocumentTab(next.path);
+        else {
+          state.selected = null; state.editorNode = null; state.editorDirty = false; localStorage.removeItem('diopside.activePath.v1');
+          showWelcome(); renderTree(); renderDocumentTabs(); persistWorkspaceSnapshot();
+        }
+      }
+
+      function isHiddenNode(node) {
+        return node.path.split('/').some(part => part.startsWith('.')) || node.name === '.DS_Store';
+      }
+
+      function isNodeVisible(node) { return state.settings.showHidden || !isHiddenNode(node); }
+
+      function treeMatches(node, query) {
+        if (!isNodeVisible(node)) return false;
+        if (!query) return true;
+        return node.name.toLowerCase().includes(query) || node.children?.some(child => isNodeVisible(child) && treeMatches(child, query));
+      }
+
+      function revealFavoriteInTree(node) {
+        const parts = node.path.split('/');
+        for (let depth = 1; depth < parts.length; depth++) state.expanded.add(nodeId(parts.slice(0, depth).join('/')));
+        persistWorkspaceSnapshot();
+        requestAnimationFrame(() => {
+          const row = $$('.tree-row:not(.favorite-row)', $('#fileTree')).find(item => item.dataset.id === node.id);
+          row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+      }
+
+      function renderTree() {
+        const tree = $('#fileTree'); const query = $('#fileSearch').value.trim().toLowerCase();
+        if (!state.tree.length) {
+          tree.innerHTML = state.rootName
+            ? `<div class="tree-empty"><div class="empty-icon">${icons.folder}</div><div>${escapeHtml(state.rootName)} is empty.</div></div>`
+            : `<div class="tree-empty"><div class="empty-icon">${icons['folder-open']}</div><div>No folder is open.</div><div>Choose a parent folder to browse its contents.</div></div>`;
+          return;
+        }
+        tree.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        const createRow = (node, depth = 0, favorite = false) => {
+          const row = document.createElement('div');
+          const isOpen = query || state.expanded.has(node.id); const attached = state.attachments.some(x => x.id === node.id);
+          row.className = `tree-row${favorite ? ' favorite-row' : ''}${state.selected?.id === node.id ? ' selected' : ''}${attached ? ' contexted' : ''}`;
+          row.style.paddingLeft = `${4 + depth * 14}px`; row.dataset.id = node.id; row.setAttribute('role', 'treeitem');
+          row.draggable = !!state.rootHandle?.getFileHandle;
+          row.innerHTML = `
+            <span class="tree-toggle ${isOpen ? 'open' : ''}">${!favorite && node.kind === 'directory' ? icons.chevron : ''}</span>
+            <span class="tree-icon ${node.kind === 'directory' ? 'folder' : ''}">${favorite ? icons.star : icons[node.kind === 'directory' ? 'folder' : iconForFile(node.name)]}</span>
+            <span class="tree-label" title="${escapeHtml(node.path)}"${favorite ? ` data-kind="${node.kind === 'directory' ? 'folder' : 'file'}"` : ''}>${escapeHtml(node.name)}</span>
+            <button class="icon-btn tree-add" aria-label="${attached ? 'Remove from' : 'Add to'} chat context">${icons[attached ? 'x' : 'paperclip']}</button>`;
+          row.addEventListener('dragstart', event => {
+            if (!row.draggable || event.target.closest('button')) { event.preventDefault(); return; }
+            state.draggedNodeId = node.id; event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('application/x-diopside-path', node.path); event.dataTransfer.setData('text/plain', node.path);
+            requestAnimationFrame(() => row.classList.add('drag-source')); hideTreeContextMenu();
+          });
+          row.addEventListener('dragend', () => {
+            state.draggedNodeId = ''; clearMoveTargets(); $$('.tree-row.drag-source').forEach(item => item.classList.remove('drag-source'));
+          });
+          if (node.kind === 'directory') {
+            row.addEventListener('dragover', event => {
+              const source = state.nodes.get(state.draggedNodeId); const carriesFiles = [...(event.dataTransfer?.types || [])].includes('Files');
+              if (source ? canMoveNodeToDirectory(source, node) : carriesFiles) {
+                event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = source ? 'move' : 'copy';
+                clearMoveTargets(); row.classList.add('move-target'); state.moveTargetId = node.id;
+              }
+            });
+            row.addEventListener('dragleave', event => { if (!row.contains(event.relatedTarget)) row.classList.remove('move-target'); });
+            row.addEventListener('drop', async event => {
+              event.preventDefault(); event.stopPropagation(); const source = state.nodes.get(state.draggedNodeId);
+              state.draggedNodeId = ''; clearMoveTargets(); $$('.tree-row.drag-source').forEach(item => item.classList.remove('drag-source'));
+              if (source) await moveNodeToDirectory(source, node); else await handleFileDrop(event, node);
+            });
+          }
+          row.addEventListener('click', event => {
+            if (event.target.closest('.tree-add')) { toggleAttachment(node); return; }
+            hideTreeContextMenu();
+            if (favorite) revealFavoriteInTree(node);
+            if (node.kind === 'directory') selectDirectory(node, !favorite);
+            else selectFile(node);
+          });
+          row.addEventListener('dblclick', event => {
+            if (node.kind !== 'file' || !event.target.closest('.tree-label')) return;
+            event.preventDefault(); pinDocumentTab(node);
+          });
+          row.addEventListener('contextmenu', event => {
+            event.preventDefault();
+            if (favorite) revealFavoriteInTree(node);
+            node.kind === 'directory' ? selectDirectory(node, false) : selectFile(node);
+            showTreeContextMenu(node, event.clientX, event.clientY);
+          });
+          return row;
+        };
+        const favoriteNodes = state.favorites
+          .filter(item => item.workspace === state.rootName && (!query || item.name.toLowerCase().includes(query) || item.path.toLowerCase().includes(query)))
+          .map(item => state.nodes.get(nodeId(item.path))).filter(node => node && isNodeVisible(node));
+        if (favoriteNodes.length) {
+          const section = document.createElement('section'); section.className = 'favorites-section';
+          section.innerHTML = `<div class="tree-section-title">${icons.star}<span>Favorites</span></div>`;
+          favoriteNodes.forEach(node => section.appendChild(createRow(node, 0, true)));
+          frag.appendChild(section);
+        }
+        const renderNodes = (nodes, depth) => {
+          for (const node of nodes) {
+            if (!treeMatches(node, query)) continue;
+            const row = createRow(node, depth);
+            frag.appendChild(row);
+            if (node.kind === 'directory' && (query || state.expanded.has(node.id))) renderNodes(node.children, depth + 1);
+          }
+        };
+        renderNodes(state.tree, 0); tree.appendChild(frag);
+        if (!tree.children.length) tree.innerHTML = '<div class="tree-empty">No matching files</div>';
+      }
+
+      function selectDirectory(node, toggle = false) {
+        discardPreviewTabs();
+        state.selected = node; localStorage.setItem('diopside.activePath.v1', node.path);
+        if (toggle) state.expanded.has(node.id) ? state.expanded.delete(node.id) : state.expanded.add(node.id);
+        state.cachedDocument = null;
+        renderTree(); cleanupObjectUrl();
+        $('#docName').textContent = node.name; $('#docPath').textContent = node.path.includes('/') ? node.path.slice(0, node.path.lastIndexOf('/')) : state.rootName;
+        $('#docIcon').innerHTML = icons.folder;
+        $('#attachSelected').disabled = false; $('#attachTreeSelected').disabled = false; $('#showInFinder').disabled = false; $('#openExternal').disabled = true; $('#editMarkdown').disabled = true;
+        const files = flattenFiles(node.children || []); const directFolders = (node.children || []).filter(child => child.kind === 'directory').length;
+        $('#docStage').innerHTML = `<div class="unsupported"><div class="unsupported-card"><div class="file-badge">${icons.folder}</div><h2>${escapeHtml(node.name)}</h2><p>${files.length} file${files.length === 1 ? '' : 's'}${directFolders ? ` · ${directFolders} folder${directFolders === 1 ? '' : 's'}` : ''}</p><button class="primary-btn" id="folderAttachAction">${icons.paperclip} Add folder to chat</button></div></div>`;
+        $('#folderAttachAction').addEventListener('click', () => toggleAttachment(node));
+        setStatus(`${node.path} · ${files.length} files`);
+        persistWorkspaceSnapshot();
+        if (window.innerWidth <= 760) activateMobilePane('document');
+      }
+
+      async function selectFile(node, options = {}) {
+        prepareDocumentTab(node, options);
+        state.selected = node; localStorage.setItem('diopside.activePath.v1', node.path); renderTree();
+        if (state.cachedDocument?.path !== node.path) state.cachedDocument = null;
+        $('#docName').textContent = node.name; $('#docPath').textContent = node.path.includes('/') ? node.path.slice(0, node.path.lastIndexOf('/')) : '';
+        $('#docIcon').innerHTML = icons[iconForFile(node.name)] || icons.file;
+        $('#attachSelected').disabled = false; $('#attachTreeSelected').disabled = false; $('#showInFinder').disabled = false; $('#openExternal').disabled = false;
+        $('#editMarkdown').disabled = !['md', 'markdown'].includes(extOf(node.name));
+        setStatus(`Opening ${node.path}`); cleanupObjectUrl();
+        const stage = $('#docStage'); stage.innerHTML = '<div class="tree-empty">Loading preview…</div>';
+        try {
+          const file = await getNodeFile(node); const ext = extOf(node.name);
+          if (['md', 'markdown'].includes(ext)) {
+            state.markdownSource = await file.text(); node.cachedContent = state.markdownSource; state.cachedDocument = { path: node.path, name: node.name, kind: 'text', content: state.markdownSource, savedContent: state.markdownSource, editing: false, dirty: false }; state.editorNode = node; state.editorDirty = false;
+            stage.innerHTML = `<article class="markdown-view">${markdown(state.markdownSource)}</article>`;
+          } else if (isTextFile(node.name)) {
+            const content = await file.text();
+            node.cachedContent = content; state.cachedDocument = { path: node.path, name: node.name, kind: 'text', content, savedContent: content, editing: false, dirty: false };
+            if (['html', 'htm'].includes(ext)) {
+              const frame = document.createElement('iframe'); frame.className = 'frame-view'; frame.setAttribute('sandbox', 'allow-forms allow-modals allow-popups'); frame.srcdoc = content; stage.innerHTML = ''; stage.appendChild(frame);
+            } else stage.innerHTML = `<pre class="text-view">${escapeHtml(content)}</pre>`;
+          } else if (['png','jpg','jpeg','gif','webp','svg','avif','bmp'].includes(ext)) {
+            state.objectUrl = URL.createObjectURL(file); stage.innerHTML = `<div class="media-view"><img src="${state.objectUrl}" alt="${escapeHtml(node.name)}"></div>`;
+          } else if (ext === 'pdf') {
+            state.objectUrl = URL.createObjectURL(file); stage.innerHTML = `<iframe class="frame-view" src="${state.objectUrl}#view=FitH" title="${escapeHtml(node.name)}"></iframe>`;
+          } else if (['mp3','wav','ogg','m4a','aac','flac'].includes(ext)) {
+            state.objectUrl = URL.createObjectURL(file); stage.innerHTML = `<div class="media-view"><audio controls src="${state.objectUrl}"></audio></div>`;
+          } else if (['mp4','webm','mov','m4v'].includes(ext)) {
+            state.objectUrl = URL.createObjectURL(file); stage.innerHTML = `<div class="media-view"><video controls src="${state.objectUrl}"></video></div>`;
+          } else {
+            state.cachedDocument = { path: node.path, name: node.name, kind: 'binary' };
+            stage.innerHTML = `<div class="unsupported"><div class="unsupported-card"><div class="file-badge">${escapeHtml(ext.toUpperCase() || 'FILE')}</div><h2>${escapeHtml(node.name)}</h2><p>This format is best viewed in its native application.</p><button class="primary-btn" id="unsupportedOpen">${icons.external} Open / download externally</button></div></div>`;
+            $('#unsupportedOpen').addEventListener('click', openSelectedExternal);
+          }
+          setStatus(`${node.name} · ${formatBytes(file.size)}`);
+          persistWorkspaceSnapshot();
+          if (window.innerWidth <= 760) activateMobilePane('document');
+        } catch (error) {
+          stage.innerHTML = `<div class="unsupported"><div class="unsupported-card"><h2>Preview unavailable</h2><p>${escapeHtml(error.message)}</p></div></div>`;
+          setStatus(`Could not preview ${node.name}`); persistWorkspaceSnapshot();
+        }
+      }
+
+      async function openSelectedExternal() {
+        if (!state.selected) return;
+        try {
+          if (typeof window.diopsideNativeOpenExternal === 'function') {
+            await window.diopsideNativeOpenExternal(state.selected.path);
+            toast('The file was handed to your system.');
+            return;
+          }
+          const file = await getNodeFile(state.selected); const url = URL.createObjectURL(file);
+          const link = document.createElement('a'); link.href = url; link.target = '_blank'; link.rel = 'noopener'; link.download = file.name;
+          document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+          toast('The file was handed to your browser. Your system will choose how to open it.');
+        } catch (error) { toast(error.message, 'error'); }
+      }
+
+      async function showNodeInFinder(node = state.selected) {
+        const label = window.diopsideNative?.platform === 'ios' ? 'Files' : 'Finder';
+        if (!node && !state.rootHandle) return;
+        try {
+          if (typeof window.diopsideNativeShowInFinder !== 'function') {
+            toast('Web browsers cannot reveal sandboxed file handles in Finder. Use the Diopside macOS app.', 'error');
+            return;
+          }
+          await window.diopsideNativeShowInFinder(node?.path || '');
+          toast(`${node?.name || state.rootName} shown in ${label}.`);
+        } catch (error) { toast(`Could not show the item in ${label}: ${error.message}`, 'error'); }
+      }
+
+      function markdown(source) {
+        const blocks = []; let text = escapeHtml(source).replace(/\r\n?/g, '\n');
+        text = text.replace(/```([\w-]*)\n([\s\S]*?)```/g, (_, lang, code) => { const id = blocks.length; blocks.push(`<pre><code data-language="${lang}">${code.trimEnd()}</code></pre>`); return `\n@@BLOCK${id}@@\n`; });
+        text = extractMarkdownTables(text, blocks);
+        text = text.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+        text = text.replace(/^######\s+(.+)$/gm, '<h4>$1</h4>').replace(/^#####\s+(.+)$/gm, '<h4>$1</h4>').replace(/^####\s+(.+)$/gm, '<h4>$1</h4>').replace(/^###\s+(.+)$/gm, '<h3>$1</h3>').replace(/^##\s+(.+)$/gm, '<h2>$1</h2>').replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+        text = text.replace(/^&gt;\s?(.+)$/gm, '<blockquote>$1</blockquote>').replace(/^---+$/gm, '<hr>');
+        text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<span title="Local relative images may not render">[$1 image: $2]</span>');
+        text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/__([^_]+)__/g, '<strong>$1</strong>').replace(/(^|\W)\*([^*\n]+)\*(?=\W|$)/g, '$1<em>$2</em>');
+        text = text.replace(/(?:^|\n)((?:[-*+] .+(?:\n|$))+)/g, (_, list) => `\n<ul>${list.trim().split('\n').map(x => `<li>${x.replace(/^[-*+]\s+/, '')}</li>`).join('')}</ul>\n`);
+        text = text.replace(/(?:^|\n)((?:\d+\. .+(?:\n|$))+)/g, (_, list) => `\n<ol>${list.trim().split('\n').map(x => `<li>${x.replace(/^\d+\.\s+/, '')}</li>`).join('')}</ol>\n`);
+        text = text.split(/\n{2,}/).map(chunk => {
+          const c = chunk.trim(); if (!c) return '';
+          if (/^(@@BLOCK\d+@@|<h\d|<ul>|<ol>|<blockquote>|<hr)/.test(c)) return c.replace(/\n/g, c.startsWith('<blockquote>') ? '' : '\n');
+          return `<p>${c.replace(/\n/g, '<br>')}</p>`;
+        }).join('\n');
+        blocks.forEach((block, idx) => { text = text.replace(`@@BLOCK${idx}@@`, block); });
+        return text;
+      }
+
+      function tableCells(line) {
+        return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+      }
+
+      function tableCellMarkup(value) {
+        return value
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+          .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      }
+
+      function extractMarkdownTables(text, blocks) {
+        const lines = text.split('\n'); const output = [];
+        for (let i = 0; i < lines.length; i++) {
+          const header = tableCells(lines[i]); const separator = i + 1 < lines.length ? tableCells(lines[i + 1]) : [];
+          const isTable = lines[i].includes('|') && separator.length === header.length && separator.length > 0 && separator.every(cell => /^:?-{3,}:?$/.test(cell));
+          if (!isTable) { output.push(lines[i]); continue; }
+          const aligns = separator.map(cell => cell.startsWith(':') && cell.endsWith(':') ? 'center' : cell.endsWith(':') ? 'right' : 'left');
+          const rows = []; i += 2;
+          while (i < lines.length && lines[i].includes('|') && lines[i].trim()) { rows.push(tableCells(lines[i])); i++; }
+          i--;
+          const colStyle = index => ` style="text-align:${aligns[index] || 'left'}"`;
+          const html = `<table><thead><tr>${header.map((cell, index) => `<th${colStyle(index)}>${tableCellMarkup(cell)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${header.map((_, index) => `<td${colStyle(index)}>${tableCellMarkup(row[index] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+          const id = blocks.length; blocks.push(html); output.push('', `@@BLOCK${id}@@`, '');
+        }
+        return output.join('\n');
+      }
+
+      function showTreeContextMenu(node, x, y) {
+        state.contextNode = node; state.contextDirectory = node.kind === 'directory' ? node : null;
+        const menu = $('#treeContextMenu'); const attached = state.attachments.some(item => item.id === node.id);
+        $('#contextAttach').hidden = false; $('#contextFavorite').hidden = false; $('#contextShowInFinder').hidden = false; $('#contextNewNote').hidden = node.kind !== 'directory';
+        $('#contextAttachLabel').textContent = attached ? 'Remove from chat' : `Add ${node.kind === 'directory' ? 'folder' : 'document'} to chat`;
+        $('#contextFavoriteLabel').textContent = isFavorite(node) ? 'Remove from favorites' : 'Add to favorites';
+        menu.classList.add('open');
+        positionTreeContextMenu(x, y, node.kind === 'directory' ? 156 : 122);
+      }
+
+      function showFolderContextMenu(directory, x, y) {
+        state.contextNode = null; state.contextDirectory = directory || null;
+        $('#contextAttach').hidden = true; $('#contextFavorite').hidden = true; $('#contextShowInFinder').hidden = false; $('#contextNewNote').hidden = false;
+        $('#treeContextMenu').classList.add('open'); positionTreeContextMenu(x, y, 88);
+      }
+
+      function positionTreeContextMenu(x, y, height) {
+        const menu = $('#treeContextMenu'); const width = 220;
+        menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - width - 8))}px`;
+        menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - height - 8))}px`;
+      }
+
+      function hideTreeContextMenu() { $('#treeContextMenu').classList.remove('open'); }
+
+      function isFavorite(node) {
+        return !!node && state.favorites.some(item => item.workspace === state.rootName && item.path === node.path);
+      }
+
+      function toggleFavorite(node) {
+        if (!node || !state.rootName) return;
+        const index = state.favorites.findIndex(item => item.workspace === state.rootName && item.path === node.path);
+        if (index >= 0) {
+          state.favorites.splice(index, 1); toast(`${node.name} removed from favorites`);
+        } else {
+          state.favorites.push({ workspace: state.rootName, path: node.path, name: node.name, kind: node.kind });
+          toast(`${node.name} added to favorites`);
+        }
+        localStorage.setItem('diopside.favorites.v1', JSON.stringify(state.favorites));
+        renderTree();
+      }
+
+      function openMarkdownEditor() {
+        const node = state.selected;
+        if (!node || node.kind !== 'file' || !['md', 'markdown'].includes(extOf(node.name))) return;
+        state.editorNode = node; state.editorDirty = false;
+        const stage = $('#docStage');
+        stage.innerHTML = `
+          <section class="markdown-editor">
+            <div class="editor-ribbon" role="toolbar" aria-label="Markdown formatting">
+              <div class="ribbon-group">
+                <button class="editor-tool" id="editorUndo" aria-label="Undo" title="Undo (⌘Z)" disabled>↶</button>
+                <button class="editor-tool" id="editorRedo" aria-label="Redo" title="Redo (⌘Y)" disabled>↷</button>
+              </div>
+              <div class="ribbon-group">
+                <button class="editor-tool" data-md-command="bold" aria-label="Bold" title="Bold"><strong>B</strong></button>
+                <button class="editor-tool" data-md-command="italic" aria-label="Italic" title="Italic"><em>I</em></button>
+              </div>
+              <div class="ribbon-group">
+                <button class="editor-tool" data-md-command="h1" aria-label="Heading 1" title="Heading 1">H1</button>
+                <button class="editor-tool" data-md-command="h2" aria-label="Heading 2" title="Heading 2">H2</button>
+                <button class="editor-tool" data-md-command="quote" aria-label="Block quote" title="Block quote">❯</button>
+              </div>
+              <div class="ribbon-group">
+                <button class="editor-tool" data-md-command="bullet" aria-label="Bulleted list" title="Bulleted list">• List</button>
+                <button class="editor-tool" data-md-command="number" aria-label="Numbered list" title="Numbered list">1. List</button>
+              </div>
+              <div class="ribbon-group">
+                <button class="editor-tool" data-md-command="link" aria-label="Insert link" title="Insert link">Link</button>
+                <button class="editor-tool" data-md-command="image" aria-label="Insert image" title="Insert image">Image</button>
+                <button class="editor-tool" data-md-command="code" aria-label="Code" title="Code">&lt;/&gt;</button>
+                <button class="editor-tool" data-md-command="rule" aria-label="Horizontal rule" title="Horizontal rule">—</button>
+              </div>
+              <div class="ribbon-group">
+                <span class="editor-state" id="editorState">Editing</span>
+                <button class="editor-tool" id="toggleEditorPreview" aria-label="Toggle preview" title="Toggle preview">Preview</button>
+                <button class="editor-tool danger" id="cancelMarkdownEdit" aria-label="Cancel editing">Cancel</button>
+                <button class="editor-tool primary" id="saveMarkdownEdit" aria-label="Save Markdown">Save</button>
+              </div>
+            </div>
+            <div class="editor-surface split" id="editorSurface">
+              <textarea class="markdown-input" id="markdownInput" aria-label="Markdown source" spellcheck="true"></textarea>
+              <div class="editor-preview" id="markdownPreview"><article class="markdown-view"></article></div>
+            </div>
+          </section>`;
+        const input = $('#markdownInput'); input.value = state.markdownSource; initializeEditorHistory(); updateEditorPreview(); bindSynchronizedEditorScroll(input, $('#markdownPreview'));
+        input.addEventListener('input', () => {
+          state.editorDirty = input.value !== state.markdownSource; $('#editorState').textContent = state.editorDirty ? 'Unsaved changes' : 'Editing'; updateEditorPreview();
+          if (!state.editorHistoryLock) scheduleEditorHistorySnapshot();
+        });
+        input.addEventListener('keydown', event => {
+          const command = event.metaKey || event.ctrlKey;
+          if (command && event.key.toLowerCase() === 's') { event.preventDefault(); saveMarkdownEdit(); }
+          if (command && event.key.toLowerCase() === 'z' && !event.shiftKey) { event.preventDefault(); undoMarkdownEdit(); }
+          if (command && (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))) { event.preventDefault(); redoMarkdownEdit(); }
+          if (event.key === 'Tab') { event.preventDefault(); replaceEditorSelection('  ', '', false); }
+        });
+        $$('.editor-tool[data-md-command]', stage).forEach(button => button.addEventListener('click', () => applyMarkdownCommand(button.dataset.mdCommand)));
+        $('#toggleEditorPreview').addEventListener('click', toggleEditorPreview);
+        $('#editorUndo').addEventListener('click', undoMarkdownEdit); $('#editorRedo').addEventListener('click', redoMarkdownEdit);
+        $('#cancelMarkdownEdit').addEventListener('click', cancelMarkdownEdit);
+        $('#saveMarkdownEdit').addEventListener('click', saveMarkdownEdit);
+        input.focus(); setStatus(`Editing ${node.name}`);
+      }
+
+      function updateEditorPreview() {
+        const input = $('#markdownInput'); const preview = $('#markdownPreview .markdown-view');
+        if (input && preview) { preview.innerHTML = markdown(input.value); syncEditorScroll(input, $('#markdownPreview')); }
+      }
+
+      function syncEditorScroll(source, target) {
+        if (!source || !target || state.editorScrollSyncing) return;
+        const sourceRange = source.scrollHeight - source.clientHeight; const targetRange = target.scrollHeight - target.clientHeight;
+        state.editorScrollSyncing = true;
+        target.scrollTop = sourceRange > 0 && targetRange > 0 ? (source.scrollTop / sourceRange) * targetRange : 0;
+        requestAnimationFrame(() => { state.editorScrollSyncing = false; });
+      }
+
+      function bindSynchronizedEditorScroll(input, preview) {
+        if (!input || !preview) return;
+        input.addEventListener('scroll', () => syncEditorScroll(input, preview), { passive: true });
+        preview.addEventListener('scroll', () => syncEditorScroll(preview, input), { passive: true });
+      }
+
+      function editorSnapshot() {
+        const input = $('#markdownInput');
+        return input ? { value: input.value, start: input.selectionStart, end: input.selectionEnd } : null;
+      }
+
+      function initializeEditorHistory() {
+        if (state.editorHistoryTimer) clearTimeout(state.editorHistoryTimer);
+        state.editorHistoryTimer = null; state.editorHistoryLock = false;
+        state.editorHistory = [editorSnapshot()]; state.editorHistoryIndex = 0; updateHistoryButtons();
+      }
+
+      function scheduleEditorHistorySnapshot() {
+        if (state.editorHistoryTimer) clearTimeout(state.editorHistoryTimer);
+        state.editorHistoryTimer = setTimeout(recordEditorHistorySnapshot, 240);
+      }
+
+      function recordEditorHistorySnapshot() {
+        if (state.editorHistoryTimer) clearTimeout(state.editorHistoryTimer);
+        state.editorHistoryTimer = null;
+        const snapshot = editorSnapshot(); if (!snapshot) return;
+        const current = state.editorHistory[state.editorHistoryIndex];
+        if (current?.value === snapshot.value) { current.start = snapshot.start; current.end = snapshot.end; updateHistoryButtons(); return; }
+        state.editorHistory = state.editorHistory.slice(0, state.editorHistoryIndex + 1);
+        state.editorHistory.push(snapshot);
+        if (state.editorHistory.length > 100) state.editorHistory.shift();
+        state.editorHistoryIndex = state.editorHistory.length - 1; updateHistoryButtons();
+      }
+
+      function updateHistoryButtons() {
+        const undo = $('#editorUndo'); const redo = $('#editorRedo');
+        if (undo) undo.disabled = state.editorHistoryIndex <= 0;
+        if (redo) redo.disabled = state.editorHistoryIndex < 0 || state.editorHistoryIndex >= state.editorHistory.length - 1;
+      }
+
+      function applyEditorSnapshot(snapshot) {
+        const input = $('#markdownInput'); if (!input || !snapshot) return;
+        state.editorHistoryLock = true; input.value = snapshot.value; input.setSelectionRange(snapshot.start, snapshot.end); input.dispatchEvent(new Event('input', { bubbles: true })); state.editorHistoryLock = false;
+        updateHistoryButtons(); input.focus();
+      }
+
+      function undoMarkdownEdit() {
+        const pending = !!state.editorHistoryTimer;
+        if (pending) recordEditorHistorySnapshot();
+        if (state.editorHistoryIndex <= 0) return;
+        state.editorHistoryIndex--; applyEditorSnapshot(state.editorHistory[state.editorHistoryIndex]);
+      }
+
+      function redoMarkdownEdit() {
+        if (state.editorHistoryTimer) recordEditorHistorySnapshot();
+        if (state.editorHistoryIndex >= state.editorHistory.length - 1) return;
+        state.editorHistoryIndex++; applyEditorSnapshot(state.editorHistory[state.editorHistoryIndex]);
+      }
+
+      function replaceEditorSelection(before, after = '', selectInner = true) {
+        const input = $('#markdownInput'); if (!input) return;
+        const start = input.selectionStart; const end = input.selectionEnd; const selected = input.value.slice(start, end);
+        input.setRangeText(`${before}${selected}${after}`, start, end, 'end');
+        if (selectInner && !selected) input.setSelectionRange(start + before.length, start + before.length);
+        input.dispatchEvent(new Event('input', { bubbles: true })); recordEditorHistorySnapshot(); input.focus();
+      }
+
+      function prefixEditorLines(prefix) {
+        const input = $('#markdownInput'); const start = input.selectionStart; const end = input.selectionEnd;
+        const lineStart = input.value.lastIndexOf('\n', start - 1) + 1; const nextBreak = input.value.indexOf('\n', end); const lineEnd = nextBreak < 0 ? input.value.length : nextBreak;
+        const selected = input.value.slice(lineStart, lineEnd); const replacement = selected.split('\n').map((line, index) => `${typeof prefix === 'function' ? prefix(index) : prefix}${line}`).join('\n');
+        input.setRangeText(replacement, lineStart, lineEnd, 'select'); input.dispatchEvent(new Event('input', { bubbles: true })); recordEditorHistorySnapshot(); input.focus();
+      }
+
+      function applyMarkdownCommand(command) {
+        const input = $('#markdownInput'); if (!input) return;
+        const selected = input.value.slice(input.selectionStart, input.selectionEnd);
+        const commands = {
+          bold: () => replaceEditorSelection('**', '**'),
+          italic: () => replaceEditorSelection('*', '*'),
+          h1: () => prefixEditorLines('# '),
+          h2: () => prefixEditorLines('## '),
+          quote: () => prefixEditorLines('> '),
+          bullet: () => prefixEditorLines('- '),
+          number: () => prefixEditorLines(index => `${index + 1}. `),
+          link: () => replaceEditorSelection('[', '](https://)'),
+          image: () => replaceEditorSelection('![', '](image-url)'),
+          code: () => selected.includes('\n') ? replaceEditorSelection('```\n', '\n```') : replaceEditorSelection('`', '`'),
+          rule: () => replaceEditorSelection(`${input.selectionStart ? '\n\n' : ''}---\n\n`, '', false)
+        };
+        commands[command]?.();
+      }
+
+      function toggleEditorPreview() {
+        const surface = $('#editorSurface'); const previewOnly = surface.classList.toggle('preview-only');
+        surface.classList.toggle('split', !previewOnly); $('#toggleEditorPreview').textContent = previewOnly ? 'Edit' : 'Preview';
+        if (!previewOnly) $('#markdownInput').focus();
+      }
+
+      function cancelMarkdownEdit() {
+        if (state.editorDirty && !confirm('Discard unsaved Markdown changes?')) return;
+        if (state.editorHistoryTimer) clearTimeout(state.editorHistoryTimer); state.editorHistoryTimer = null;
+        state.editorDirty = false;
+        $('#docStage').innerHTML = `<article class="markdown-view">${markdown(state.markdownSource)}</article>`;
+        setStatus(`${state.editorNode?.name || 'Markdown'} · preview`);
+      }
+
+      async function saveMarkdownEdit() {
+        const input = $('#markdownInput'); const node = state.editorNode;
+        if (!input || !node) return;
+        const content = input.value; $('#saveMarkdownEdit').disabled = true; setStatus(`Saving ${node.name}…`);
+        try {
+          if (node.handle?.createWritable) {
+            let permission = await node.handle.queryPermission?.({ mode: 'readwrite' });
+            if (permission !== 'granted') permission = await node.handle.requestPermission?.({ mode: 'readwrite' });
+            if (permission !== 'granted') throw new Error('Write permission was not granted');
+            const writable = await node.handle.createWritable(); await writable.write(content); await writable.close();
+            state.markdownSource = content; state.editorDirty = false; $('#editorState').textContent = 'Saved'; toast(`${node.name} saved`); setStatus(`${node.name} saved`);
+          } else {
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' }); const url = URL.createObjectURL(blob);
+            const link = document.createElement('a'); link.href = url; link.download = node.name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+            state.markdownSource = content; state.editorDirty = false; $('#editorState').textContent = 'Downloaded'; toast('This browser cannot write the source file, so an edited copy was downloaded.'); setStatus(`${node.name} downloaded`);
+          }
+          node.cachedContent = content; state.cachedDocument = { path: node.path, name: node.name, kind: 'text', content, savedContent: content, editing: true, dirty: false }; persistWorkspaceSnapshot();
+        } catch (error) { toast(`Could not save: ${error.message}`, 'error'); setStatus('Markdown save failed'); }
+        finally { $('#saveMarkdownEdit').disabled = false; }
+      }
+
+      function toggleAttachment(node) {
+        const idx = state.attachments.findIndex(item => item.id === node.id);
+        if (idx >= 0) { state.attachments.splice(idx, 1); toast(`${node.name} removed from chat context`); }
+        else { state.attachments.push(node); toast(`${node.name} added to chat context`); }
+        renderTree(); renderAttachments(); persistWorkspaceSnapshot();
+      }
+
+      function renderAttachments() {
+        const strip = $('#contextStrip'); strip.innerHTML = '';
+        state.attachments.forEach(node => {
+          const chip = document.createElement('div'); chip.className = 'context-chip';
+          chip.innerHTML = `${icons[node.kind === 'directory' ? 'folder' : iconForFile(node.name)]}<span title="${escapeHtml(node.path)}">${escapeHtml(node.name)}</span><button class="chip-remove" aria-label="Remove ${escapeHtml(node.name)}">${icons.x}</button>`;
+          chip.querySelector('button').addEventListener('click', () => toggleAttachment(node)); strip.appendChild(chip);
+        });
+      }
+
+      async function contextForNode(node, budget) {
+        if (budget.remaining <= 0) return '';
+        if (node.kind === 'file') {
+          if (!isTextFile(node.name)) return `[Binary file available but not embedded: ${node.path}]\n`;
+          try {
+            const file = await getNodeFile(node); const size = Math.min(budget.remaining, 30000);
+            const content = (await file.text()).slice(0, size); budget.remaining -= content.length;
+            return `\n--- FILE: ${node.path} ---\n${content}${file.size > content.length ? '\n[Content truncated]' : ''}\n--- END FILE ---\n`;
+          } catch (error) { return `[Could not read ${node.path}: ${error.message}]\n`; }
+        }
+        let result = `\n--- FOLDER: ${node.path} ---\n`; const files = flattenFiles(node.children || []);
+        for (const child of files.slice(0, 50)) { if (budget.remaining <= 0) break; result += await contextForNode(child, budget); }
+        if (files.length > 50) result += `\n[${files.length - 50} additional files omitted]\n`;
+        return result + `--- END FOLDER: ${node.path} ---\n`;
+      }
+
+      function flattenFiles(nodes) {
+        const result = [];
+        for (const node of nodes) node.kind === 'file' ? result.push(node) : result.push(...flattenFiles(node.children || []));
+        return result;
+      }
+
+      async function buildContext() {
+        if (!state.attachments.length) return '';
+        const budget = { remaining: 120000 }; let output = 'The user attached the following workspace context:\n';
+        for (const node of state.attachments) { if (budget.remaining <= 0) break; output += await contextForNode(node, budget); }
+        if (budget.remaining <= 0) output += '\n[Context limit reached; some content was omitted.]';
+        return output;
+      }
+
+      function chatTitle(messages = state.messages) {
+        const first = messages.find(message => message.role === 'user' && message.content?.trim());
+        if (!first) return 'Untitled chat';
+        const title = first.content.replace(/\s+/g, ' ').trim();
+        return title.length > 52 ? `${title.slice(0, 51).trim()}…` : title;
+      }
+
+      function persistCurrentChat() {
+        const messages = state.messages.filter(message => !message.pending && ['user', 'assistant'].includes(message.role)).map(message => ({ role: message.role, content: String(message.content || '') }));
+        if (!messages.length) return;
+        const now = new Date().toISOString();
+        if (!state.currentChatId) state.currentChatId = crypto.randomUUID?.() || `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        const index = state.chatHistory.findIndex(chat => chat.id === state.currentChatId);
+        const record = { id: state.currentChatId, title: chatTitle(messages), createdAt: index >= 0 ? state.chatHistory[index].createdAt : now, updatedAt: now, messages };
+        if (index >= 0) state.chatHistory.splice(index, 1, record); else state.chatHistory.push(record);
+        state.chatHistory.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+        state.chatHistory = state.chatHistory.slice(0, 100);
+        try {
+          localStorage.setItem('diopside.chats.v1', JSON.stringify(state.chatHistory));
+          localStorage.setItem('diopside.currentChat.v1', state.currentChatId);
+        } catch { toast('Chat history storage is full. Save this chat as Markdown.', 'error'); }
+        renderHistory();
+      }
+
+      function restoreCurrentChat() {
+        const chat = state.chatHistory.find(item => item.id === state.currentChatId);
+        if (!chat) { state.currentChatId = ''; return; }
+        state.messages = chat.messages.map(message => ({ role: message.role, content: String(message.content || '') }));
+      }
+
+      function renderHistory() {
+        const list = $('#historyList');
+        if (!state.chatHistory.length) { list.innerHTML = '<div class="history-empty">No saved conversations yet.</div>'; return; }
+        list.innerHTML = '';
+        state.chatHistory.forEach(chat => {
+          const item = document.createElement('div'); item.className = `history-item${chat.id === state.currentChatId ? ' current' : ''}`;
+          const date = new Date(chat.updatedAt || chat.createdAt); const stamp = Number.isNaN(date.getTime()) ? '' : date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+          item.innerHTML = `<div class="history-copy"><strong>${escapeHtml(chat.title || 'Untitled chat')}</strong><span>${escapeHtml(stamp)} · ${chat.messages.length} message${chat.messages.length === 1 ? '' : 's'}</span></div><button class="icon-btn history-delete" aria-label="Delete ${escapeHtml(chat.title || 'chat')}">${icons.trash}</button>`;
+          item.addEventListener('click', event => {
+            if (event.target.closest('.history-delete')) return;
+            persistCurrentChat(); state.currentChatId = chat.id; localStorage.setItem('diopside.currentChat.v1', chat.id);
+            state.messages = chat.messages.map(message => ({ role: message.role, content: String(message.content || '') }));
+            renderMessages(); renderHistory(); $('#historyPopover').classList.remove('open'); setStatus(`Opened ${chat.title}`);
+          });
+          item.querySelector('.history-delete').addEventListener('click', event => { event.stopPropagation(); deleteChat(chat.id); });
+          list.appendChild(item);
+        });
+      }
+
+      function deleteChat(id) {
+        const chat = state.chatHistory.find(item => item.id === id); if (!chat) return;
+        if (!confirm(`Delete “${chat.title || 'Untitled chat'}” from history?`)) return;
+        state.chatHistory = state.chatHistory.filter(item => item.id !== id);
+        localStorage.setItem('diopside.chats.v1', JSON.stringify(state.chatHistory));
+        if (state.currentChatId === id) {
+          state.currentChatId = ''; state.messages = []; localStorage.setItem('diopside.currentChat.v1', ''); renderMessages();
+        }
+        renderHistory(); toast('Chat deleted');
+      }
+
+      function toggleHistory() {
+        renderHistory(); $('#historyPopover').classList.toggle('open');
+      }
+
+      function conversationMarkdown() {
+        const messages = state.messages.filter(message => !message.pending);
+        const lines = [`# ${chatTitle(messages)}`, '', `Exported from Diopside on ${new Date().toLocaleString()}`, ''];
+        messages.forEach(message => lines.push(`## ${message.role === 'user' ? 'You' : 'Assistant'}`, '', String(message.content || '').trim(), ''));
+        return `${lines.join('\n').trim()}\n`;
+      }
+
+      function safeMarkdownName(value) {
+        const cleaned = String(value || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').slice(0, 100) || 'conversation';
+        return /\.md$/i.test(cleaned) ? cleaned : `${cleaned}.md`;
+      }
+
+      function openSaveChat() {
+        if (!state.messages.some(message => !message.pending)) { toast('There is no chat to save yet', 'error'); return; }
+        $('#chatFileName').value = safeMarkdownName(chatTitle());
+        $('#chatSaveDestination').textContent = state.rootHandle?.getFileHandle ? dropTargetName() : 'Downloads';
+        $('#saveChatModal').classList.add('open'); setTimeout(() => { $('#chatFileName').focus(); $('#chatFileName').select(); }, 40);
+      }
+
+      function closeSaveChat() { $('#saveChatModal').classList.remove('open'); }
+
+      async function saveChatMarkdown() {
+        const content = conversationMarkdown(); const requestedName = safeMarkdownName($('#chatFileName').value); const button = $('#confirmSaveChat');
+        button.disabled = true;
+        try {
+          if (state.rootHandle?.getFileHandle) {
+            let permission = await state.rootHandle.queryPermission?.({ mode: 'readwrite' });
+            if (permission !== 'granted') permission = await state.rootHandle.requestPermission?.({ mode: 'readwrite' });
+            if (permission !== 'granted') throw new Error('Write permission was not granted');
+            const directory = await currentDropDirectoryHandle(); const name = await availableDropName(directory, requestedName);
+            const handle = await directory.getFileHandle(name, { create: true }); const writable = await handle.createWritable();
+            await writable.write(content); await writable.close(); await refreshWorkspacePreservingContext();
+            closeSaveChat(); toast(`${name} saved to ${dropTargetName()}`); setStatus(`${name} created`);
+          } else {
+            const url = URL.createObjectURL(new Blob([content], { type: 'text/markdown;charset=utf-8' }));
+            const link = document.createElement('a'); link.href = url; link.download = requestedName; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000);
+            closeSaveChat(); toast(`${requestedName} downloaded`); setStatus('Chat exported as Markdown');
+          }
+        } catch (error) { toast(`Could not save chat: ${error.message}`, 'error'); }
+        finally { button.disabled = false; }
+      }
+
+      function renderMessages() {
+        const box = $('#messages');
+        if (!state.messages.length) {
+          box.innerHTML = `<div class="chat-empty"><div class="spark">${icons.spark}</div><strong>Ask across your workspace</strong><span>Attach a file or folder, then ask Diopside to explain, compare, summarize, or draft.</span></div>`;
+          return;
+        }
+        box.innerHTML = '';
+        state.messages.forEach(msg => {
+          const el = document.createElement('div'); el.className = `message ${msg.role}`;
+          const body = msg.pending ? '<span class="typing"><i></i><i></i><i></i></span>' : (msg.role === 'assistant' ? `<div class="chat-markdown">${chatMarkdown(msg.content)}</div>` : escapeHtml(msg.content));
+          el.innerHTML = `<div class="avatar">${msg.role === 'user' ? 'YOU' : icons.spark}</div><div class="bubble">${body}</div>`;
+          box.appendChild(el);
+        });
+        box.scrollTop = box.scrollHeight;
+      }
+
+      function chatMarkdown(text) {
+        return markdown(text || '');
+      }
+
+      async function sendMessage() {
+        const input = $('#prompt'); const text = input.value.trim();
+        if (!text || state.loading) return;
+        if (!state.settings.currentModel) { toast('Choose an active model in Settings first', 'error'); openSettings(); return; }
+        if (!state.settings.apiUrl) { toast('Configure an API URL first', 'error'); openSettings(); return; }
+        state.loading = true; updateSendState(); input.value = ''; state.ui.prompt = ''; try { localStorage.setItem('diopside.ui.v1', JSON.stringify(state.ui)); } catch {} resizePrompt();
+        state.messages.push({ role: 'user', content: text }, { role: 'assistant', content: '', pending: true }); renderMessages(); persistCurrentChat();
+        setStatus('Preparing workspace context…');
+        try {
+          const context = await buildContext();
+          const conversation = state.messages.filter(m => !m.pending).map(m => ({ role: m.role, content: m.content }));
+          if (context) {
+            const lastUser = [...conversation].reverse().find(m => m.role === 'user');
+            if (lastUser) lastUser.content = `${context}\n\nUSER REQUEST:\n${lastUser.content}`;
+          }
+          const endpoint = `${normalizeUrl(state.settings.apiUrl)}/chat/completions`;
+          const headers = { 'Content-Type': 'application/json' };
+          if (state.settings.apiKey) headers.Authorization = `Bearer ${state.settings.apiKey}`;
+          setStatus(`Waiting for ${state.settings.currentModel}…`);
+          const response = await fetch(endpoint, {
+            method: 'POST', headers,
+            body: JSON.stringify({ model: state.settings.currentModel, messages: [{ role: 'system', content: state.settings.systemPrompt }, ...conversation], temperature: Number(state.settings.temperature), stream: true })
+          });
+          if (!response.ok) throw new Error(await responseError(response));
+          const target = state.messages[state.messages.length - 1]; target.pending = false;
+          const type = response.headers.get('content-type') || '';
+          if (!response.body || !type.includes('text/event-stream')) {
+            const data = await response.json(); target.content = data.choices?.[0]?.message?.content || data.output_text || 'The model returned no text.'; renderMessages();
+          } else {
+            const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
+            while (true) {
+              const { value, done } = await reader.read(); if (done) break;
+              buffer += decoder.decode(value, { stream: true }); const lines = buffer.split('\n'); buffer = lines.pop() || '';
+              for (const line of lines) {
+                if (!line.startsWith('data:')) continue; const raw = line.slice(5).trim(); if (!raw || raw === '[DONE]') continue;
+                try { const data = JSON.parse(raw); target.content += data.choices?.[0]?.delta?.content || data.delta?.text || ''; } catch {}
+              }
+              renderMessages();
+            }
+          }
+          setStatus('Response complete'); setProviderState('online', 'AI connected');
+        } catch (error) {
+          const target = state.messages[state.messages.length - 1]; target.pending = false; target.content = `Connection error: ${error.message}`;
+          renderMessages(); setProviderState('error', 'Connection error'); setStatus('Chat request failed');
+        } finally { state.loading = false; persistCurrentChat(); updateSendState(); input.focus(); }
+      }
+
+      async function responseError(response) {
+        let detail = `${response.status} ${response.statusText}`;
+        try { const data = await response.json(); detail = data.error?.message || data.message || detail; } catch {}
+        return detail;
+      }
+
+      function updateSendState() { $('#sendBtn').disabled = state.loading || !$('#prompt').value.trim(); }
+      function resizePrompt() { const el = $('#prompt'); el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 180)}px`; updateSendState(); }
+
+      function openSettings() {
+        const s = state.settings;
+        $('#apiUrl').value = s.apiUrl; $('#apiKey').value = s.apiKey; $('#systemPrompt').value = s.systemPrompt; $('#temperature').value = s.temperature; $('#temperatureValue').textContent = Number(s.temperature).toFixed(1);
+        $('#textSize').value = Number(s.textScale) || 1; $('#textSizeValue').textContent = `${Math.round((Number(s.textScale) || 1) * 100)}%`;
+        $('#showHidden').checked = !!s.showHidden;
+        $('#themeSelect').value = s.theme || 'neon-city'; $('#settingsModal').dataset.originalTextScale = Number(s.textScale) || 1; $('#settingsModal').dataset.originalTheme = s.theme || 'neon-city';
+        $('#settingsFolderName').textContent = state.rootName || 'No folder selected'; $('#settingsFolderInfo').textContent = state.rootName ? `${state.fileCount.toLocaleString()} files available · browser-managed access` : 'Choose a local folder to begin';
+        renderModelsList(s.models, s.activeModels); $('#settingsModal').classList.add('open'); setTimeout(() => $('#apiUrl').focus(), 40);
+      }
+      function closeSettings(revert = true) {
+        if (revert) { applyTextScale($('#settingsModal').dataset.originalTextScale || state.settings.textScale); applyTheme($('#settingsModal').dataset.originalTheme || state.settings.theme); }
+        $('#settingsModal').classList.remove('open');
+      }
+
+      function renderModelsList(models = [], selected = []) {
+        const list = $('#modelsList');
+        if (!models.length) { list.innerHTML = '<div class="models-empty">No models fetched yet</div>'; return; }
+        list.innerHTML = models.map(model => `<label class="model-check"><input type="checkbox" value="${escapeHtml(model)}" ${selected.includes(model) ? 'checked' : ''}><span>${escapeHtml(model)}</span></label>`).join('');
+      }
+
+      async function fetchModels() {
+        const url = normalizeUrl($('#apiUrl').value); const key = $('#apiKey').value.trim(); const status = $('#providerStatus');
+        if (!url) { status.className = 'provider-status error'; status.textContent = 'Enter an API base URL.'; return; }
+        status.className = 'provider-status'; status.textContent = 'Fetching models…'; $('#fetchModels').disabled = true;
+        try {
+          const headers = key ? { Authorization: `Bearer ${key}` } : {};
+          const response = await fetch(`${url}/models`, { headers });
+          if (!response.ok) throw new Error(await responseError(response));
+          const data = await response.json(); const models = (Array.isArray(data) ? data : data.data || data.models || []).map(m => typeof m === 'string' ? m : (m.id || m.name)).filter(Boolean).sort();
+          if (!models.length) throw new Error('The endpoint returned no model IDs');
+          state.settings.models = [...new Set(models)];
+          const retained = state.settings.activeModels.filter(m => models.includes(m)); state.settings.activeModels = retained.length ? retained : [models[0]];
+          renderModelsList(state.settings.models, state.settings.activeModels);
+          status.className = 'provider-status success'; status.textContent = `${models.length} model${models.length === 1 ? '' : 's'} found. Select the models you want available.`;
+          setProviderState('online', 'Models available');
+        } catch (error) {
+          status.className = 'provider-status error'; status.textContent = `Could not fetch models: ${error.message}. Check the URL, key, and CORS settings.`;
+          setProviderState('error', 'Connection error');
+        } finally { $('#fetchModels').disabled = false; }
+      }
+
+      function saveSettingsFromModal() {
+        const activeModels = $$('#modelsList input:checked').map(input => input.value);
+        state.settings = {
+          ...state.settings,
+          apiUrl: normalizeUrl($('#apiUrl').value), apiKey: $('#apiKey').value.trim(), activeModels,
+          currentModel: activeModels.includes(state.settings.currentModel) ? state.settings.currentModel : (activeModels[0] || ''),
+          systemPrompt: $('#systemPrompt').value.trim() || defaultSettings.systemPrompt,
+          temperature: Number($('#temperature').value),
+          textScale: Number($('#textSize').value),
+          theme: $('#themeSelect').value,
+          showHidden: $('#showHidden').checked
+        };
+        saveSettingsStore(); applyTextScale(state.settings.textScale); applyTheme(state.settings.theme); renderTree(); renderModelSelect(); updateProviderDisplay(); closeSettings(false); toast('Settings saved');
+      }
+
+      function renderModelSelect() {
+        const select = $('#chatModel'); const active = state.settings.activeModels;
+        select.innerHTML = active.length ? active.map(model => `<option value="${escapeHtml(model)}" ${model === state.settings.currentModel ? 'selected' : ''}>${escapeHtml(model)}</option>`).join('') : '<option value="">Configure a model</option>';
+      }
+      function setProviderState(mode, label) { $('#providerDot').className = `status-dot ${mode}`; $('#providerLabel').textContent = label; }
+      function updateProviderDisplay() { state.settings.apiUrl && state.settings.currentModel ? setProviderState('online', state.settings.currentModel) : setProviderState('', 'AI not configured'); }
+
+      function newChat() {
+        persistCurrentChat(); state.currentChatId = ''; state.messages = []; localStorage.setItem('diopside.currentChat.v1', '');
+        renderMessages(); renderHistory(); $('#historyPopover').classList.remove('open'); setStatus('New chat');
+      }
+
+      function activateMobilePane(name) {
+        if (!window.matchMedia('(max-width: 760px)').matches) { applyPanelVisibility(); return; }
+        state.layout.filesVisible = name === 'files';
+        state.layout.chatVisible = name === 'chat';
+        $$('.pane[data-mobile-pane]').forEach(p => p.classList.toggle('mobile-active', p.dataset.mobilePane === name));
+        $$('.mobile-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+        state.ui.mobilePane = name; applyPanelVisibility();
+        try {
+          localStorage.setItem('diopside.ui.v1', JSON.stringify(state.ui));
+          localStorage.setItem('diopside.layout.v1', JSON.stringify(state.layout));
+        } catch {}
+      }
+
+      function setupGutter(gutter, side) {
+        gutter.addEventListener('pointerdown', event => {
+          gutter.setPointerCapture(event.pointerId); gutter.classList.add('dragging');
+          const onMove = e => {
+            if (side === 'left') { state.layout.left = Math.max(210, Math.min(460, e.clientX)); document.documentElement.style.setProperty('--left-w', `${state.layout.left}px`); }
+            else { state.layout.right = Math.max(300, Math.min(560, window.innerWidth - e.clientX)); document.documentElement.style.setProperty('--right-w', `${state.layout.right}px`); }
+          };
+          const onUp = () => { localStorage.setItem('diopside.layout.v1', JSON.stringify(state.layout)); gutter.classList.remove('dragging'); gutter.removeEventListener('pointermove', onMove); gutter.removeEventListener('pointerup', onUp); };
+          gutter.addEventListener('pointermove', onMove); gutter.addEventListener('pointerup', onUp);
+        });
+      }
+
+      function idb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open('diopside-db', 1);
+          request.onupgradeneeded = () => request.result.createObjectStore('handles');
+          request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+        });
+      }
+      async function storeHandle(handle) {
+        try { const db = await idb(); const tx = db.transaction('handles', 'readwrite'); tx.objectStore('handles').put(handle, 'workspace'); }
+        catch { /* Handle persistence is a convenience only. */ }
+      }
+      async function restoreHandle() {
+        if (!('showDirectoryPicker' in window)) return;
+        try {
+          const db = await idb(); const request = db.transaction('handles').objectStore('handles').get('workspace');
+          const handle = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+          if (!handle) return;
+          const permission = await handle.queryPermission({ mode: 'read' });
+          if (permission === 'granted') await loadWorkspaceHandle(handle, false);
+          else { state.rootHandle = handle; if (!state.rootName) state.rootName = handle.name; $('#workspaceName').textContent = `${handle.name} · restored`; $('#settingsFolderName').textContent = handle.name; $('#settingsFolderInfo').textContent = state.tree.length ? `${state.fileCount.toLocaleString()} files restored · re-open folder for write access` : 'Re-open the folder to restore access'; }
+        } catch { /* Ignore unsupported persistence. */ }
+      }
+
+      $('#openFolder').addEventListener('click', chooseFolder); $('#openFolderTop').addEventListener('click', chooseFolder); $('#chooseFolderSettings').addEventListener('click', chooseFolder);
+      $('#toggleBrowserPanel').addEventListener('click', () => togglePanel('files'));
+      $('#toggleChatPanel').addEventListener('click', () => togglePanel('chat'));
+      $('#hideBrowserPanel').addEventListener('click', () => togglePanel('files', false));
+      $('#hideChatPanel').addEventListener('click', () => togglePanel('chat', false));
+      $('#refreshTree').addEventListener('click', async () => { if (state.rootHandle) await loadWorkspaceHandle(state.rootHandle, false); else if (state.tree.length) renderTree(); else toast('Choose a folder first'); });
+      $('#fileSearch').addEventListener('input', event => { state.ui.search = event.target.value; try { localStorage.setItem('diopside.ui.v1', JSON.stringify(state.ui)); } catch {} renderTree(); }); $('#clearSearch').addEventListener('click', () => { $('#fileSearch').value = ''; state.ui.search = ''; try { localStorage.setItem('diopside.ui.v1', JSON.stringify(state.ui)); } catch {} renderTree(); $('#fileSearch').focus(); });
+      $('#fileTree').addEventListener('dragenter', event => {
+        const targetRow = event.target.closest('.tree-row'); const targetNode = state.nodes.get(targetRow?.dataset.id);
+        const source = state.nodes.get(state.draggedNodeId); const carriesFiles = [...(event.dataTransfer?.types || [])].includes('Files');
+        if ((source && targetRow) || (!source && targetNode?.kind === 'directory')) return;
+        if (source && canMoveNodeToDirectory(source, null)) { event.preventDefault(); clearMoveTargets(); $('#fileTree').classList.add('move-target'); return; }
+        if (!carriesFiles) return;
+        event.preventDefault(); state.dragDepth++; const tree = $('#fileTree'); tree.dataset.dropLabel = `Drop into ${dropTargetName()}`; tree.classList.add('drop-target');
+      });
+      $('#fileTree').addEventListener('dragover', event => {
+        const targetRow = event.target.closest('.tree-row'); const targetNode = state.nodes.get(targetRow?.dataset.id);
+        const source = state.nodes.get(state.draggedNodeId); const carriesFiles = [...(event.dataTransfer?.types || [])].includes('Files');
+        if ((source && targetRow) || (!source && targetNode?.kind === 'directory')) return;
+        if (source && canMoveNodeToDirectory(source, null)) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; $('#fileTree').classList.add('move-target'); }
+        else if (carriesFiles) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; }
+      });
+      $('#fileTree').addEventListener('dragleave', event => {
+        if ($('#fileTree').contains(event.relatedTarget)) return;
+        state.dragDepth = 0; $('#fileTree').classList.remove('drop-target', 'move-target');
+      });
+      $('#fileTree').addEventListener('drop', async event => {
+        const targetRow = event.target.closest('.tree-row'); const targetNode = state.nodes.get(targetRow?.dataset.id);
+        const source = state.nodes.get(state.draggedNodeId);
+        if ((source && targetRow) || (!source && targetNode?.kind === 'directory')) return;
+        state.draggedNodeId = ''; clearMoveTargets(); $$('.tree-row.drag-source').forEach(item => item.classList.remove('drag-source'));
+        if (source) { event.preventDefault(); await moveNodeToDirectory(source, null); }
+        else await handleFileDrop(event);
+      });
+      $('#fileTree').addEventListener('contextmenu', event => { if (event.target.closest('.tree-row')) return; event.preventDefault(); showFolderContextMenu(selectedDirectoryNode(), event.clientX, event.clientY); });
+      $('#docStage').addEventListener('contextmenu', event => { if (state.selected?.kind !== 'directory') return; event.preventDefault(); showFolderContextMenu(state.selected, event.clientX, event.clientY); });
+      $('#attachTreeSelected').addEventListener('click', () => state.selected ? toggleAttachment(state.selected) : toast('Select a document or folder first'));
+      $('#attachSelected').addEventListener('click', () => state.selected && toggleAttachment(state.selected));
+      $('#attachCurrent').addEventListener('click', () => state.selected ? toggleAttachment(state.selected) : toast('Select a document or folder first'));
+      $('#editMarkdown').addEventListener('click', openMarkdownEditor);
+      $('#showInFinder').addEventListener('click', () => showNodeInFinder());
+      $('#openExternal').addEventListener('click', openSelectedExternal);
+      $('#contextAttach').addEventListener('click', () => { if (state.contextNode) toggleAttachment(state.contextNode); hideTreeContextMenu(); });
+      $('#contextFavorite').addEventListener('click', () => { if (state.contextNode) toggleFavorite(state.contextNode); hideTreeContextMenu(); });
+      $('#contextShowInFinder').addEventListener('click', () => { const node = state.contextNode || state.contextDirectory; hideTreeContextMenu(); showNodeInFinder(node); });
+      $('#contextNewNote').addEventListener('click', () => { const directory = state.contextDirectory; hideTreeContextMenu(); openNewNote(directory); });
+      $('#settingsBtn').addEventListener('click', openSettings); $('#closeSettings').addEventListener('click', closeSettings); $('#cancelSettings').addEventListener('click', closeSettings);
+      $('#settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
+      $('#toggleKey').addEventListener('click', () => { const input = $('#apiKey'); input.type = input.type === 'password' ? 'text' : 'password'; $('#toggleKey').dataset.icon = input.type === 'password' ? 'eye' : 'eye-off'; $('#toggleKey').innerHTML = icons[$('#toggleKey').dataset.icon]; });
+      $('#fetchModels').addEventListener('click', fetchModels); $('#saveSettings').addEventListener('click', saveSettingsFromModal);
+      $('#temperature').addEventListener('input', e => $('#temperatureValue').textContent = Number(e.target.value).toFixed(1));
+      $('#textSize').addEventListener('input', e => { applyTextScale(e.target.value); $('#textSizeValue').textContent = `${Math.round(Number(e.target.value) * 100)}%`; });
+      $('#themeSelect').addEventListener('change', e => applyTheme(e.target.value));
+      $('#chatModel').addEventListener('change', e => { state.settings.currentModel = e.target.value; saveSettingsStore(); updateProviderDisplay(); });
+      $('#newChat').addEventListener('click', newChat); $('#chatHistory').addEventListener('click', event => { event.stopPropagation(); toggleHistory(); }); $('#closeHistory').addEventListener('click', () => $('#historyPopover').classList.remove('open'));
+      $('#saveChat').addEventListener('click', openSaveChat); $('#closeSaveChat').addEventListener('click', closeSaveChat); $('#cancelSaveChat').addEventListener('click', closeSaveChat); $('#confirmSaveChat').addEventListener('click', saveChatMarkdown);
+      $('#saveChatModal').addEventListener('click', event => { if (event.target.id === 'saveChatModal') closeSaveChat(); });
+      $('#chatFileName').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); saveChatMarkdown(); } });
+      $('#closeNewNote').addEventListener('click', closeNewNote); $('#cancelNewNote').addEventListener('click', closeNewNote); $('#confirmNewNote').addEventListener('click', createNewNote);
+      $('#newNoteModal').addEventListener('click', event => { if (event.target.id === 'newNoteModal') closeNewNote(); });
+      $('#newNoteName').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); createNewNote(); } });
+      $('#sendBtn').addEventListener('click', sendMessage);
+      $('#prompt').addEventListener('input', event => { state.ui.prompt = event.target.value; try { localStorage.setItem('diopside.ui.v1', JSON.stringify(state.ui)); } catch {} resizePrompt(); }); $('#prompt').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMessage(); } });
+      $$('.mobile-tab').forEach(tab => tab.addEventListener('click', () => activateMobilePane(tab.dataset.tab)));
+      document.addEventListener('click', event => { if (!event.target.closest('#treeContextMenu')) hideTreeContextMenu(); if (!event.target.closest('#historyPopover') && !event.target.closest('#chatHistory')) $('#historyPopover').classList.remove('open'); });
+      document.addEventListener('contextmenu', event => { if (!event.defaultPrevented && !event.target.closest('.tree-row')) hideTreeContextMenu(); });
+      window.addEventListener('resize', () => { hideTreeContextMenu(); applyPanelVisibility(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') { hideTreeContextMenu(); $('#historyPopover').classList.remove('open'); if ($('#settingsModal').classList.contains('open')) closeSettings(); if ($('#saveChatModal').classList.contains('open')) closeSaveChat(); if ($('#newNoteModal').classList.contains('open')) closeNewNote(); } if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); openSettings(); } });
+      window.addEventListener('pagehide', persistApplicationState);
+      window.addEventListener('beforeunload', persistApplicationState);
+      window.addEventListener('diopside-native-folder-restored', event => {
+        if (event.detail) loadWorkspaceHandle(event.detail, false);
+      });
+      setupGutter($('#leftGutter'), 'left'); setupGutter($('#rightGutter'), 'right');
+
+      applyTheme(state.settings.theme); applyTextScale(state.settings.textScale); applyLayout(); applyNativePlatformLabels(); restoreCurrentChat(); showWelcome();
+      const restoredWorkspace = restoreWorkspaceSnapshot(); if (!restoredWorkspace) restoreWorkspaceHint();
+      $('#fileSearch').value = state.ui.search || ''; $('#prompt').value = state.ui.prompt || ''; resizePrompt(); activateMobilePane(state.ui.mobilePane || 'files');
+      renderTree(); renderDocumentTabs(); renderMessages(); renderHistory(); renderAttachments(); renderModelSelect(); updateProviderDisplay(); updateSendState();
+      if (restoredWorkspace) restoreSelectedWorkspaceView();
+      restoreHandle();
+      window.diopsideNativeRestoreFolder?.();
+    })();
+  </script>
+</body>
+</html>
